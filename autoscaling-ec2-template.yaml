@@ -1,0 +1,440 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Auto Scaling EC2 Template - Creates Auto Scaling Group with Launch Template for each environment'
+
+Parameters:
+  VpcStackName:
+    Type: String
+    Description: Name of the VPC CloudFormation stack
+    Default: vpc-1
+  
+  Environment:
+    Type: String
+    Description: Environment name (dev/staging/prod)
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+  
+  ApplicationName:
+    Type: String
+    Description: Application name for resource naming
+    Default: MyApp
+  
+  InstanceType:
+    Type: String
+    Description: EC2 instance type
+    Default: t3.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - m5.large
+      - m5.xlarge
+  
+  MinSize:
+    Type: Number
+    Description: Minimum number of instances in Auto Scaling Group
+    Default: 1
+    MinValue: 1
+    MaxValue: 10
+  
+  MaxSize:
+    Type: Number
+    Description: Maximum number of instances in Auto Scaling Group
+    Default: 3
+    MinValue: 1
+    MaxValue: 20
+  
+  DesiredCapacity:
+    Type: Number
+    Description: Desired number of instances in Auto Scaling Group
+    Default: 2
+    MinValue: 1
+    MaxValue: 20
+  
+  HealthCheckGracePeriod:
+    Type: Number
+    Description: Health check grace period in seconds
+    Default: 300
+    MinValue: 0
+    MaxValue: 1800
+  
+  HealthCheckType:
+    Type: String
+    Description: Health check type
+    Default: ELB
+    AllowedValues:
+      - EC2
+      - ELB
+  
+  TargetTrackingScalingPolicyCPU:
+    Type: Number
+    Description: Target CPU utilization percentage for scaling (e.g., 70 for 70%)
+    Default: 70
+    MinValue: 1
+    MaxValue: 100
+  
+  ScaleUpCooldown:
+    Type: Number
+    Description: Cooldown period after scale-up action (seconds)
+    Default: 300
+    MinValue: 0
+    MaxValue: 86400
+  
+  ScaleDownCooldown:
+    Type: Number
+    Description: Cooldown period after scale-down action (seconds)
+    Default: 300
+    MinValue: 0
+    MaxValue: 86400
+  
+  AMIId:
+    Type: AWS::EC2::Image::Id
+    Description: AMI ID for EC2 instances (Amazon Linux 2 recommended)
+    Default: ''
+  
+  SubnetDeployment:
+    Type: String
+    Description: Deploy in public or private subnets
+    Default: private
+    AllowedValues:
+      - public
+      - private
+  
+  EnableDetailedMonitoring:
+    Type: String
+    Description: Enable detailed CloudWatch monitoring
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+  
+  UserDataScript:
+    Type: String
+    Description: User data script (base64 encoded or plain text)
+    Default: |
+      #!/bin/bash
+      yum update -y
+      yum install -y amazon-ssm-agent aws-cli
+      systemctl enable amazon-ssm-agent
+      systemctl start amazon-ssm-agent
+      # Add your application installation commands here
+
+Mappings:
+  EnvironmentConfig:
+    dev:
+      InstanceType: t3.micro
+      MinSize: 1
+      MaxSize: 3
+      DesiredCapacity: 1
+      TargetCPU: 70
+    staging:
+      InstanceType: t3.small
+      MinSize: 2
+      MaxSize: 5
+      DesiredCapacity: 2
+      TargetCPU: 70
+    prod:
+      InstanceType: t3.medium
+      MinSize: 2
+      MaxSize: 10
+      DesiredCapacity: 3
+      TargetCPU: 60
+  
+  AMIMap:
+    us-east-1:
+      AMAZON_LINUX_2: ami-0c55b159cbfafe1f0
+    us-west-2:
+      AMAZON_LINUX_2: ami-0c55b159cbfafe1f0
+    eu-west-1:
+      AMAZON_LINUX_2: ami-0c55b159cbfafe1f0
+
+Resources:
+  # Security Group for Auto Scaling Group
+  AutoScalingSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${ApplicationName}-${Environment}-ASG-SG'
+      GroupDescription: Security group for Auto Scaling Group instances
+      VpcId: !ImportValue
+        Fn::Sub: '${VpcStackName}-VPC-ID'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP access
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS access
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !ImportValue
+            Fn::Sub: '${VpcStackName}-Public-SG-ID'
+          Description: SSH from public subnet only
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}-${Environment}-ASG-SG'
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # IAM Role for EC2 Instances (with SSM and CloudWatch)
+  EC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ApplicationName}-${Environment}-EC2-Role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyName: CloudWatchLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogStreams
+                Resource: '*'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}-${Environment}-EC2-Role'
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # Instance Profile for EC2 Instances
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub '${ApplicationName}-${Environment}-EC2-Profile'
+      Roles:
+        - !Ref EC2InstanceRole
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}-${Environment}-EC2-Profile'
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # Launch Template
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub '${ApplicationName}-${Environment}-LT'
+      LaunchTemplateData:
+        ImageId: !If
+          - UseProvidedAMI
+          - !Ref AMIId
+          - !FindInMap
+            - AMIMap
+            - !Ref AWS::Region
+            - AMAZON_LINUX_2
+        InstanceType: !Ref InstanceType
+        IamInstanceProfile:
+          Arn: !GetAtt EC2InstanceProfile.Arn
+        SecurityGroupIds:
+          - !Ref AutoScalingSecurityGroup
+        UserData:
+          Fn::Base64: !Sub |
+            ${UserDataScript}
+        Monitoring:
+          Enabled: !If
+            - EnableDetailedMonitoring
+            - true
+            - false
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: !Sub '${ApplicationName}-${Environment}-Instance'
+              - Key: Environment
+                Value: !Ref Environment
+              - Key: Application
+                Value: !Ref ApplicationName
+              - Key: ManagedBy
+                Value: CloudFormation
+  
+  # Auto Scaling Group
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: !Sub '${ApplicationName}-${Environment}-ASG'
+      VPCZoneIdentifier:
+        Fn::If:
+          - UsePublicSubnets
+          - - !ImportValue
+              Fn::Sub: '${VpcStackName}-Public-Subnet-ID'
+          - - !ImportValue
+              Fn::Sub: '${VpcStackName}-Private-Subnet-1-ID'
+            - !ImportValue
+              Fn::Sub: '${VpcStackName}-Private-Subnet-2-ID'
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: !Ref MinSize
+      MaxSize: !Ref MaxSize
+      DesiredCapacity: !Ref DesiredCapacity
+      HealthCheckType: !Ref HealthCheckType
+      HealthCheckGracePeriod: !Ref HealthCheckGracePeriod
+      TargetGroupARNs:
+        - !If
+          - CreateTargetGroup
+          - !Ref TargetGroup
+          - !Ref AWS::NoValue
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}-${Environment}-ASG'
+          PropagateAtLaunch: true
+        - Key: Environment
+          Value: !Ref Environment
+          PropagateAtLaunch: true
+        - Key: Application
+          Value: !Ref ApplicationName
+          PropagateAtLaunch: true
+  
+  # Target Group for Application Load Balancer (optional)
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: CreateTargetGroup
+    Properties:
+      Name: !Sub '${ApplicationName}-${Environment}-TG'
+      Port: 80
+      Protocol: HTTP
+      VpcId: !ImportValue
+        Fn::Sub: '${VpcStackName}-VPC-ID'
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      TargetType: instance
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}-${Environment}-TG'
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # Target Tracking Scaling Policy - CPU Utilization
+  CPUScalingPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: !Ref TargetTrackingScalingPolicyCPU
+        ScaleInCooldown: !Ref ScaleDownCooldown
+        ScaleOutCooldown: !Ref ScaleUpCooldown
+  
+  # CloudWatch Alarm for High CPU
+  HighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ApplicationName}-${Environment}-HighCPU'
+      AlarmDescription: Alarm when CPU exceeds threshold
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: !Ref TargetTrackingScalingPolicyCPU
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref AutoScalingGroup
+  
+  # CloudWatch Alarm for Low CPU
+  LowCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ApplicationName}-${Environment}-LowCPU'
+      AlarmDescription: Alarm when CPU is below threshold
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 30
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref AutoScalingGroup
+
+Conditions:
+  UsePublicSubnets: !Equals [!Ref SubnetDeployment, 'public']
+  UsePrivateSubnets: !Equals [!Ref SubnetDeployment, 'private']
+  UseProvidedAMI: !Not [!Equals [!Ref AMIId, '']]
+  EnableDetailedMonitoring: !Equals [!Ref EnableDetailedMonitoring, 'true']
+  CreateTargetGroup: !Equals [!Ref HealthCheckType, 'ELB']
+
+Outputs:
+  AutoScalingGroupName:
+    Description: Auto Scaling Group Name
+    Value: !Ref AutoScalingGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-ASG-Name'
+  
+  AutoScalingGroupARN:
+    Description: Auto Scaling Group ARN
+    Value: !GetAtt AutoScalingGroup.ARN
+    Export:
+      Name: !Sub '${AWS::StackName}-ASG-ARN'
+  
+  LaunchTemplateId:
+    Description: Launch Template ID
+    Value: !Ref LaunchTemplate
+    Export:
+      Name: !Sub '${AWS::StackName}-LaunchTemplate-ID'
+  
+  LaunchTemplateVersion:
+    Description: Launch Template Version
+    Value: !GetAtt LaunchTemplate.LatestVersionNumber
+    Export:
+      Name: !Sub '${AWS::StackName}-LaunchTemplate-Version'
+  
+  SecurityGroupId:
+    Description: Auto Scaling Security Group ID
+    Value: !Ref AutoScalingSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityGroup-ID'
+  
+  TargetGroupARN:
+    Description: Target Group ARN (if created)
+    Value: !If
+      - CreateTargetGroup
+      - !Ref TargetGroup
+      - 'N/A'
+    Export:
+      Name: !Sub '${AWS::StackName}-TargetGroup-ARN'
+  
+  EC2InstanceProfileARN:
+    Description: EC2 Instance Profile ARN
+    Value: !GetAtt EC2InstanceProfile.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-InstanceProfile-ARN'
+  
+  SSMConnectCommand:
+    Description: Command to connect to instances via SSM
+    Value: !Sub 'aws ssm start-session --target <instance-id> --region ${AWS::Region}'

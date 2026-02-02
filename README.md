@@ -236,10 +236,327 @@ To add additional subnets, modify the template and add:
 3. For private instances, ensure NAT Gateway is running
 4. Verify IAM role is attached for SSM access
 
+## Auto Scaling EC2 Template
+
+### Overview
+
+The `autoscaling-ec2-template.yaml` provides a production-ready Auto Scaling Group configuration for EC2 instances across different environments (dev, staging, prod). It includes:
+
+- **Launch Template** - Standardized EC2 instance configuration
+- **Auto Scaling Group** - Automatic scaling based on CPU utilization
+- **Target Group** - For Application Load Balancer integration (optional)
+- **CloudWatch Alarms** - Monitoring and alerting
+- **IAM Roles** - SSM Session Manager and CloudWatch access
+- **Multi-Environment Support** - Separate parameter files for each environment
+
+### Architecture Recommendations
+
+#### ✅ Best Practices
+
+1. **Deploy in Private Subnets** (Recommended)
+   - Production workloads should be in private subnets
+   - Access via Application Load Balancer in public subnet
+   - Use NAT Gateway for outbound internet access
+
+2. **Multi-AZ Deployment**
+   - Auto Scaling Group spans both private subnets (different AZs)
+   - Ensures high availability and fault tolerance
+
+3. **Health Checks**
+   - **EC2**: Basic instance health checks (for dev/testing)
+   - **ELB**: Application-level health checks (for staging/prod)
+
+4. **Scaling Policies**
+   - CPU-based target tracking (configurable per environment)
+   - Cooldown periods to prevent rapid scaling oscillations
+
+5. **Monitoring**
+   - Detailed CloudWatch monitoring enabled
+   - Custom alarms for high/low CPU utilization
+
+### Deployment
+
+#### Prerequisites
+
+1. VPC stack must be deployed first
+2. Ensure VPC stack exports are available
+3. For ELB health checks, Application Load Balancer should be configured separately
+
+#### Deploy Auto Scaling Group for Each Environment
+
+**Development Environment:**
+```bash
+aws cloudformation create-stack \
+  --stack-name autoscaling-dev \
+  --template-body file://autoscaling-ec2-template.yaml \
+  --parameters file://parameters-autoscaling-dev.json \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region us-east-1
+```
+
+**Staging Environment:**
+```bash
+aws cloudformation create-stack \
+  --stack-name autoscaling-staging \
+  --template-body file://autoscaling-ec2-template.yaml \
+  --parameters file://parameters-autoscaling-staging.json \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region us-east-1
+```
+
+**Production Environment:**
+```bash
+aws cloudformation create-stack \
+  --stack-name autoscaling-prod \
+  --template-body file://autoscaling-ec2-template.yaml \
+  --parameters file://parameters-autoscaling-prod.json \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region us-east-1
+```
+
+### Auto Scaling Parameters
+
+| Parameter | Dev | Staging | Prod | Description |
+|-----------|-----|---------|------|-------------|
+| `InstanceType` | t3.micro | t3.small | t3.medium | EC2 instance type |
+| `MinSize` | 1 | 2 | 2 | Minimum instances |
+| `MaxSize` | 3 | 5 | 10 | Maximum instances |
+| `DesiredCapacity` | 1 | 2 | 3 | Desired instances |
+| `TargetCPU` | 70% | 70% | 60% | CPU threshold for scaling |
+| `HealthCheckType` | EC2 | ELB | ELB | Health check method |
+
+### Environment-Specific Recommendations
+
+#### Development
+- **Instance Type**: t3.micro (cost-effective)
+- **Min/Max**: 1-3 instances
+- **Health Check**: EC2 (simpler, no ALB required)
+- **Monitoring**: Basic CloudWatch metrics
+- **Purpose**: Testing and development workloads
+
+#### Staging
+- **Instance Type**: t3.small (closer to production)
+- **Min/Max**: 2-5 instances
+- **Health Check**: ELB (application-level checks)
+- **Monitoring**: Detailed monitoring enabled
+- **Purpose**: Pre-production testing
+
+#### Production
+- **Instance Type**: t3.medium or larger (based on workload)
+- **Min/Max**: 2-10 instances (scale based on traffic)
+- **Health Check**: ELB (required for production)
+- **Monitoring**: Detailed monitoring + custom alarms
+- **Target CPU**: 60% (more conservative scaling)
+- **Purpose**: Production workloads with high availability
+
+### Connecting to Auto Scaled Instances
+
+Since instances are in private subnets, use SSM Session Manager:
+
+```bash
+# List running instances
+aws ec2 describe-instances \
+  --filters "Name=tag:Environment,Values=prod" \
+  --query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`].Value|[0]]' \
+  --output table
+
+# Connect via SSM
+aws ssm start-session --target <instance-id> --region us-east-1
+```
+
+### Scaling Behavior
+
+The Auto Scaling Group uses **Target Tracking Scaling Policy** based on CPU utilization:
+
+- **Scale Out**: When average CPU > target threshold
+- **Scale In**: When average CPU < target threshold
+- **Cooldown**: Prevents rapid scaling oscillations
+- **Evaluation Period**: 2 periods of 5 minutes each
+
+### Monitoring and Alarms
+
+CloudWatch alarms are automatically created:
+- **HighCPUAlarm**: Triggers when CPU exceeds threshold
+- **LowCPUAlarm**: Triggers when CPU is below 30%
+
+View alarms:
+```bash
+aws cloudwatch describe-alarms \
+  --alarm-name-prefix MyApp-prod \
+  --region us-east-1
+```
+
+### Suggestions and Best Practices
+
+#### 🔒 Security Enhancements
+
+1. **Restrict Security Groups**
+   - Remove SSH (22) from public-facing security groups in production
+   - Use SSM Session Manager exclusively for access
+   - Implement least-privilege IAM policies
+
+2. **Network Security**
+   - Deploy instances in private subnets only
+   - Use Application Load Balancer for public access
+   - Enable VPC Flow Logs for network monitoring
+
+3. **Secrets Management**
+   - Use AWS Secrets Manager or Parameter Store
+   - Never hardcode credentials in UserData
+   - Rotate credentials regularly
+
+#### 💰 Cost Optimization
+
+1. **Right-Sizing**
+   - Start with smaller instance types
+   - Use CloudWatch metrics to identify optimal sizes
+   - Consider Reserved Instances for predictable workloads
+
+2. **Scaling Policies**
+   - Set appropriate cooldown periods
+   - Use scheduled scaling for predictable traffic patterns
+   - Consider Spot Instances for non-critical workloads
+
+3. **NAT Gateway**
+   - Consider NAT Instance for cost savings (less reliable)
+   - Use VPC Endpoints to reduce NAT Gateway data transfer costs
+   - Monitor NAT Gateway utilization
+
+#### 🚀 Performance Optimization
+
+1. **Application Load Balancer**
+   - Deploy ALB in public subnets
+   - Use target groups for health checks
+   - Enable connection draining
+
+2. **Auto Scaling Configuration**
+   - Tune scaling metrics based on application behavior
+   - Consider custom CloudWatch metrics (request rate, response time)
+   - Implement predictive scaling for known patterns
+
+3. **Instance Configuration**
+   - Use Launch Templates for version control
+   - Implement golden AMI strategy
+   - Enable EBS optimization for I/O-intensive workloads
+
+#### 📊 Monitoring and Observability
+
+1. **CloudWatch Integration**
+   - Enable detailed monitoring (1-minute intervals)
+   - Create custom dashboards
+   - Set up SNS notifications for alarms
+
+2. **Logging**
+   - Centralize logs using CloudWatch Logs
+   - Implement log retention policies
+   - Use CloudWatch Logs Insights for analysis
+
+3. **Application Monitoring**
+   - Integrate with AWS X-Ray for distributed tracing
+   - Use CloudWatch Application Insights
+   - Monitor application-specific metrics
+
+#### 🔄 CI/CD Integration
+
+1. **Infrastructure as Code**
+   - Version control all CloudFormation templates
+   - Use AWS CodePipeline for automated deployments
+   - Implement blue/green deployments
+
+2. **Testing**
+   - Test templates in dev environment first
+   - Use CloudFormation change sets for review
+   - Implement automated testing pipelines
+
+#### 🏗️ Architecture Improvements
+
+1. **High Availability**
+   - Deploy across multiple Availability Zones
+   - Use Multi-AZ RDS for databases
+   - Implement cross-region replication for DR
+
+2. **Disaster Recovery**
+   - Regular automated backups
+   - Cross-region stack replication
+   - Document recovery procedures
+
+3. **Networking**
+   - Consider Transit Gateway for multi-VPC connectivity
+   - Implement VPC Peering for inter-VPC communication
+   - Use PrivateLink for AWS service access
+
+### Template Files Structure
+
+```
+VPC-BMC/
+├── vpc-template.yaml                    # Main VPC template
+├── autoscaling-ec2-template.yaml        # Auto Scaling Group template
+├── ec2-instance-template.yaml           # Single EC2 instance template
+├── parameters-vpc1.json                  # VPC parameters
+├── parameters-vpc2.json                  # VPC parameters
+├── parameters-vpc3.json                  # VPC parameters
+├── parameters-autoscaling-dev.json      # Auto Scaling dev parameters
+├── parameters-autoscaling-staging.json  # Auto Scaling staging parameters
+├── parameters-autoscaling-prod.json     # Auto Scaling prod parameters
+├── deploy-multiple-vpcs.sh              # Deployment script
+└── README.md                            # This file
+```
+
+### Complete Deployment Workflow
+
+1. **Deploy VPC Infrastructure**
+   ```bash
+   ./deploy-multiple-vpcs.sh us-east-1
+   ```
+
+2. **Deploy Auto Scaling Groups**
+   ```bash
+   # Dev
+   aws cloudformation create-stack \
+     --stack-name autoscaling-dev \
+     --template-body file://autoscaling-ec2-template.yaml \
+     --parameters file://parameters-autoscaling-dev.json \
+     --capabilities CAPABILITY_NAMED_IAM \
+     --region us-east-1
+
+   # Staging
+   aws cloudformation create-stack \
+     --stack-name autoscaling-staging \
+     --template-body file://autoscaling-ec2-template.yaml \
+     --parameters file://parameters-autoscaling-staging.json \
+     --capabilities CAPABILITY_NAMED_IAM \
+     --region us-east-1
+
+   # Production
+   aws cloudformation create-stack \
+     --stack-name autoscaling-prod \
+     --template-body file://autoscaling-ec2-template.yaml \
+     --parameters file://parameters-autoscaling-prod.json \
+     --capabilities CAPABILITY_NAMED_IAM \
+     --region us-east-1
+   ```
+
+3. **Verify Deployment**
+   ```bash
+   # Check VPC stacks
+   aws cloudformation describe-stacks --region us-east-1
+
+   # Check Auto Scaling Groups
+   aws autoscaling describe-auto-scaling-groups --region us-east-1
+
+   # Check running instances
+   aws ec2 describe-instances --region us-east-1
+   ```
+
 ## Next Steps
 
 1. **Create EC2 Instances**: Deploy test instances in public and private subnets
-2. **Configure Application Load Balancer**: Add ALB in public subnet
-3. **Set up VPC Peering**: Connect multiple VPCs if needed
-4. **Add VPN/Transit Gateway**: For hybrid cloud connectivity
-5. **Implement VPC Flow Logs**: For network monitoring
+2. **Deploy Auto Scaling Groups**: Use autoscaling templates for each environment
+3. **Configure Application Load Balancer**: Add ALB in public subnet for production
+4. **Set up VPC Peering**: Connect multiple VPCs if needed
+5. **Add VPN/Transit Gateway**: For hybrid cloud connectivity
+6. **Implement VPC Flow Logs**: For network monitoring
+7. **Set up CloudWatch Dashboards**: For centralized monitoring
+8. **Configure Backup Strategy**: Implement automated backups
+9. **Document Runbooks**: Create operational procedures
+10. **Implement CI/CD**: Automate infrastructure deployments

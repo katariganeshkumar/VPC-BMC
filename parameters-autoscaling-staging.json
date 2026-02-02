@@ -1,0 +1,62 @@
+[
+  {
+    "ParameterKey": "VpcStackName",
+    "ParameterValue": "vpc-1"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "staging"
+  },
+  {
+    "ParameterKey": "ApplicationName",
+    "ParameterValue": "MyApp"
+  },
+  {
+    "ParameterKey": "InstanceType",
+    "ParameterValue": "t3.small"
+  },
+  {
+    "ParameterKey": "MinSize",
+    "ParameterValue": "2"
+  },
+  {
+    "ParameterKey": "MaxSize",
+    "ParameterValue": "5"
+  },
+  {
+    "ParameterKey": "DesiredCapacity",
+    "ParameterValue": "2"
+  },
+  {
+    "ParameterKey": "HealthCheckGracePeriod",
+    "ParameterValue": "300"
+  },
+  {
+    "ParameterKey": "HealthCheckType",
+    "ParameterValue": "ELB"
+  },
+  {
+    "ParameterKey": "TargetTrackingScalingPolicyCPU",
+    "ParameterValue": "70"
+  },
+  {
+    "ParameterKey": "ScaleUpCooldown",
+    "ParameterValue": "300"
+  },
+  {
+    "ParameterKey": "ScaleDownCooldown",
+    "ParameterValue": "300"
+  },
+  {
+    "ParameterKey": "AMIId",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "SubnetDeployment",
+    "ParameterValue": "private"
+  },
+  {
+    "ParameterKey": "EnableDetailedMonitoring",
+    "ParameterValue": "true"
+  }
+]
