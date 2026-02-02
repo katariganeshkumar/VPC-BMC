@@ -1,0 +1,42 @@
+# AWS credentials and sensitive files
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+credentials
+.aws/
+*.env
+.env.local
+
+# CloudFormation stack outputs (may contain sensitive data)
+*-outputs.json
+stack-outputs.json
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
