@@ -33,6 +33,6 @@
   },
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "dev"
+    "ParameterValue": "staging"
   }
 ]
