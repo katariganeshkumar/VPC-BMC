@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMC 340B Cloud Infrastructure Documentation</title>
+    <style>
+        @media print {
+            @page {
+                size: A4;
+                margin: 2cm;
+            }
+            body {
+                font-size: 11pt;
+            }
+            h1 {
+                page-break-before: always;
+                page-break-after: avoid;
+            }
+            h2, h3 {
+                page-break-after: avoid;
+            }
+            pre, blockquote {
+                page-break-inside: avoid;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            page-break-before: auto;
+        }
+        
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #95a5a6;
+            padding-bottom: 10px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            page-break-before: auto;
+        }
+        
+        h3 {
+            color: #555;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        
+        h4 {
+            color: #666;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        code {
+            background-color: #f4f4f4;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+            font-size: 0.9em;
+            color: #e83e8c;
+        }
+        
+        pre {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            border-left: 4px solid #3498db;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #333;
+            font-size: 0.85em;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 25px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            page-break-inside: avoid;
+        }
+        
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tr:hover {
+            background-color: #e9ecef;
+        }
+        
+        blockquote {
+            border-left: 4px solid #3498db;
+            margin: 25px 0;
+            padding-left: 25px;
+            color: #666;
+            font-style: italic;
+            background-color: #f8f9fa;
+            padding: 15px 25px;
+            border-radius: 4px;
+        }
+        
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        .toc {
+            background-color: #f8f9fa;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .toc h2 {
+            border-bottom: none;
+            margin-top: 0;
+        }
+        
+        .toc ul {
+            list-style-type: none;
+            margin-left: 0;
+        }
+        
+        .toc li {
+            margin-bottom: 10px;
+        }
+        
+        .toc a {
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        hr {
+            border: none;
+            border-top: 2px solid #dee2e6;
+            margin: 40px 0;
+        }
+        
+        .header-info {
+            background-color: #e8f4f8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #3498db;
+        }
+        
+        @media print {
+            .no-print {
+                display: none;
+            }
+            a[href^="http"]:after {
+                content: " (" attr(href) ")";
+                font-size: 0.8em;
+                color: #666;
+            }
+        }
+        
+        .print-instructions {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-instructions no-print">
+        <strong>📄 To create PDF:</strong> Press <kbd>Cmd+P</kbd> (Mac) or <kbd>Ctrl+P</kbd> (Windows), 
+        select "Save as PDF" as the destination, and click Save.
+    </div>
+    
+    <h1 id="bmc-340b-cloud-infrastructure">BMC 340B Cloud Infrastructure</h1>
+<p>Comprehensive AWS CloudFormation infrastructure for BMC 340B healthcare data processing and delivery platform.</p>
+<h2 id="architecture-overview">🏗️ Architecture Overview</h2>
+<p>This project provides a complete, production-ready infrastructure for BMC 340B data processing, including networking, security, compute, storage, data processing, integration, delivery, and CI/CD automation.</p>
+<div class="codehilite"><pre><span></span><code>┌─────────────────────────────────────────────────────────────────┐
+│                         BMC 340B Platform                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │
+│  │   Delivery    │  │  Integration │  │ Data Process │        │
+│  │ CloudFront    │  │ Private Link │  │ AWS Glue     │        │
+│  │ Route 53      │  │ Snowflake    │  │ ETL Jobs     │        │
+│  │ API Gateway   │  │              │  │              │        │
+│  └──────┬────────┘  └──────┬───────┘  └──────┬───────┘        │
+│         │                   │                  │                 │
+│  ┌──────▼───────────────────▼──────────────────▼───────┐       │
+│  │              Compute Layer                           │       │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │       │
+│  │  │   Dev    │  │    QA    │  │   Prod   │          │       │
+│  │  │   ASG    │  │   ASG    │  │   ASG    │          │       │
+│  │  │   ALB    │  │   ALB    │  │   ALB    │          │       │
+│  │  └──────────┘  └──────────┘  └──────────┘          │       │
+│  └──────────────────────────────────────────────────────┘       │
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────┐       │
+│  │              Storage Layer                            │       │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │       │
+│  │  │   Dev    │  │    QA    │  │   Prod   │          │       │
+│  │  │ S3 Input │  │ S3 Input │  │ S3 Input │          │       │
+│  │  │ S3 Output│  │ S3 Output│  │ S3 Output│          │       │
+│  │  │ Web Bucket│ │ Web Bucket│ │ Web Bucket│          │       │
+│  │  └──────────┘  └──────────┘  └──────────┘          │       │
+│  └──────────────────────────────────────────────────────┘       │
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────┐       │
+│  │              Network Layer                            │       │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │       │
+│  │  │   Dev    │  │    QA    │  │   Prod   │          │       │
+│  │  │   VPC    │  │   VPC    │  │   VPC    │          │       │
+│  │  │ Subnets  │  │ Subnets  │  │ Subnets  │          │       │
+│  │  │ NAT GW   │  │ NAT GW   │  │ NAT GW   │          │       │
+│  │  │ VPC EP   │  │ VPC EP   │  │ VPC EP   │          │       │
+│  │  └──────────┘  └──────────┘  └──────────┘          │       │
+│  └──────────────────────────────────────────────────────┘       │
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────┐       │
+│  │              Security Layer                           │       │
+│  │  WAF │ IAM Roles │ Security Groups │ SFTP Policies  │       │
+│  └──────────────────────────────────────────────────────┘       │
+│                                                                   │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h2 id="project-structure">📁 Project Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="nv">VPC</span><span class="o">-</span><span class="nv">BMC</span><span class="o">/</span>
+├──<span class="w"> </span><span class="nv">vpc</span><span class="o">/</span><span class="w">                              </span>#<span class="w"> </span><span class="nv">Networking</span><span class="w"> </span><span class="nv">Infrastructure</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">vpc</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w">             </span>#<span class="w"> </span><span class="nv">VPC</span>,<span class="w"> </span><span class="nv">Subnets</span>,<span class="w"> </span><span class="nv">NAT</span><span class="w"> </span><span class="nv">Gateway</span>,<span class="w"> </span><span class="nv">VPC</span><span class="w"> </span><span class="nv">Endpoints</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">vpc</span><span class="o">-</span><span class="nv">dev</span>.<span class="nv">json</span><span class="w">        </span>#<span class="w"> </span><span class="nv">Dev</span><span class="w"> </span><span class="nv">VPC</span><span class="w"> </span><span class="nv">parameters</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">vpc</span><span class="o">-</span><span class="nv">qa</span>.<span class="nv">json</span><span class="w">        </span>#<span class="w"> </span><span class="nv">QA</span><span class="w"> </span><span class="nv">VPC</span><span class="w"> </span><span class="nv">parameters</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">vpc</span><span class="o">-</span><span class="nv">prod</span>.<span class="nv">json</span><span class="w">      </span>#<span class="w"> </span><span class="nv">Prod</span><span class="w"> </span><span class="nv">VPC</span><span class="w"> </span><span class="nv">parameters</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">deploy</span><span class="o">-</span><span class="nv">multiple</span><span class="o">-</span><span class="nv">vpcs</span>.<span class="nv">sh</span><span class="w">      </span>#<span class="w"> </span><span class="nv">Multi</span><span class="o">-</span><span class="nv">VPC</span><span class="w"> </span><span class="nv">deployment</span><span class="w"> </span><span class="nv">script</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">README</span>.<span class="nv">md</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">SUPPORT</span>.<span class="nv">md</span>
+│<span class="w">   </span>└──<span class="w"> </span><span class="nv">TROUBLESHOOTING</span>.<span class="nv">md</span>
+│
+├──<span class="w"> </span><span class="nv">security</span><span class="o">/</span><span class="w">                          </span>#<span class="w"> </span><span class="nv">Security</span><span class="w"> </span><span class="nv">Infrastructure</span><span class="w"> </span><span class="ss">(</span><span class="nv">NEW</span><span class="ss">)</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">waf</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w">             </span>#<span class="w"> </span><span class="nv">Web</span><span class="w"> </span><span class="nv">Application</span><span class="w"> </span><span class="nv">Firewall</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">iam</span><span class="o">-</span><span class="nv">roles</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w">       </span>#<span class="w"> </span><span class="nv">IAM</span><span class="w"> </span><span class="nv">Roles</span><span class="w"> </span><span class="nv">and</span><span class="w"> </span><span class="nv">Policies</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">security</span><span class="o">-</span><span class="nv">groups</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w"> </span>#<span class="w"> </span><span class="nv">Security</span><span class="w"> </span><span class="nv">Groups</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">sftp</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w">            </span>#<span class="w"> </span><span class="nv">SFTP</span><span class="w"> </span><span class="nv">Access</span><span class="w"> </span><span class="nv">Policies</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">security</span><span class="o">-</span><span class="nv">dev</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">security</span><span class="o">-</span><span class="nv">qa</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">security</span><span class="o">-</span><span class="nv">prod</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">README</span>.<span class="nv">md</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">SUPPORT</span>.<span class="nv">md</span>
+│<span class="w">   </span>└──<span class="w"> </span><span class="nv">TROUBLESHOOTING</span>.<span class="nv">md</span>
+│
+├──<span class="w"> </span><span class="nv">compute</span><span class="o">/</span><span class="w">                          </span>#<span class="w"> </span><span class="nv">Compute</span><span class="w"> </span><span class="nv">Infrastructure</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">autoscaling</span><span class="o">-</span><span class="nv">ec2</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w"> </span>#<span class="w"> </span><span class="nv">Auto</span><span class="w"> </span><span class="nv">Scaling</span><span class="w"> </span><span class="nv">Groups</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">alb</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w">              </span>#<span class="w"> </span><span class="nv">Application</span><span class="w"> </span><span class="nv">Load</span><span class="w"> </span><span class="nv">Balancer</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">ec2</span><span class="o">-</span><span class="nv">instance</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w">    </span>#<span class="w"> </span><span class="nv">EC2</span><span class="w"> </span><span class="nv">Instances</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">compute</span><span class="o">-</span><span class="nv">dev</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">compute</span><span class="o">-</span><span class="nv">qa</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">compute</span><span class="o">-</span><span class="nv">prod</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">README</span>.<span class="nv">md</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">SUPPORT</span>.<span class="nv">md</span>
+│<span class="w">   </span>└──<span class="w"> </span><span class="nv">TROUBLESHOOTING</span>.<span class="nv">md</span>
+│
+├──<span class="w"> </span><span class="nv">storage</span><span class="o">/</span><span class="w">                          </span>#<span class="w"> </span><span class="nv">Storage</span><span class="w"> </span><span class="nv">Infrastructure</span><span class="w"> </span><span class="ss">(</span><span class="nv">NEW</span><span class="ss">)</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">s3</span><span class="o">-</span><span class="nv">buckets</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w">      </span>#<span class="w"> </span><span class="nv">S3</span><span class="w"> </span><span class="nv">Buckets</span><span class="w"> </span><span class="ss">(</span><span class="nv">Input</span><span class="o">/</span><span class="nv">Output</span><span class="o">/</span><span class="nv">Web</span><span class="ss">)</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">storage</span><span class="o">-</span><span class="nv">dev</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">storage</span><span class="o">-</span><span class="nv">qa</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">storage</span><span class="o">-</span><span class="nv">prod</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">README</span>.<span class="nv">md</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">SUPPORT</span>.<span class="nv">md</span>
+│<span class="w">   </span>└──<span class="w"> </span><span class="nv">TROUBLESHOOTING</span>.<span class="nv">md</span>
+│
+├──<span class="w"> </span><span class="nv">data</span><span class="o">/</span><span class="w">                             </span>#<span class="w"> </span><span class="nv">Data</span><span class="w"> </span><span class="nv">Processing</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">glue</span><span class="o">-</span><span class="nv">snowflake</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w">  </span>#<span class="w"> </span><span class="nv">AWS</span><span class="w"> </span><span class="nv">Glue</span><span class="w"> </span><span class="nv">ETL</span><span class="w"> </span><span class="nv">Jobs</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">glue</span><span class="o">-</span><span class="nv">job</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">py</span><span class="w">          </span>#<span class="w"> </span><span class="nv">Sample</span><span class="w"> </span><span class="nv">Glue</span><span class="w"> </span><span class="nv">Script</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">glue</span><span class="o">-</span><span class="nv">dev</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">glue</span><span class="o">-</span><span class="nv">qa</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">glue</span><span class="o">-</span><span class="nv">prod</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">README</span>.<span class="nv">md</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">SUPPORT</span>.<span class="nv">md</span>
+│<span class="w">   </span>└──<span class="w"> </span><span class="nv">TROUBLESHOOTING</span>.<span class="nv">md</span>
+│
+├──<span class="w"> </span><span class="nv">integration</span><span class="o">/</span><span class="w">                      </span>#<span class="w"> </span><span class="nv">Integration</span><span class="w"> </span><span class="nv">Layer</span><span class="w"> </span><span class="ss">(</span><span class="nv">NEW</span><span class="ss">)</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">privatelink</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w">     </span>#<span class="w"> </span><span class="nv">VPC</span><span class="w"> </span><span class="nv">Private</span><span class="w"> </span><span class="nv">Link</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">Snowflake</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">snowflake</span><span class="o">-</span><span class="nv">connection</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">integration</span><span class="o">-</span><span class="nv">dev</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">integration</span><span class="o">-</span><span class="nv">qa</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">integration</span><span class="o">-</span><span class="nv">prod</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">README</span>.<span class="nv">md</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">SUPPORT</span>.<span class="nv">md</span>
+│<span class="w">   </span>└──<span class="w"> </span><span class="nv">TROUBLESHOOTING</span>.<span class="nv">md</span>
+│
+├──<span class="w"> </span><span class="nv">delivery</span><span class="o">/</span><span class="w">                         </span>#<span class="w"> </span><span class="nv">Delivery</span><span class="w"> </span><span class="nv">Layer</span><span class="w"> </span><span class="ss">(</span><span class="nv">NEW</span><span class="ss">)</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">cloudfront</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w">      </span>#<span class="w"> </span><span class="nv">CloudFront</span><span class="w"> </span><span class="nv">Distribution</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">route53</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w">         </span>#<span class="w"> </span><span class="nv">Route</span><span class="w"> </span><span class="mi">53</span><span class="w"> </span><span class="nv">DNS</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">apigateway</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">yaml</span><span class="w">      </span>#<span class="w"> </span><span class="nv">API</span><span class="w"> </span><span class="nv">Gateway</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">delivery</span><span class="o">-</span><span class="nv">dev</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">delivery</span><span class="o">-</span><span class="nv">qa</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">parameters</span><span class="o">-</span><span class="nv">delivery</span><span class="o">-</span><span class="nv">prod</span>.<span class="nv">json</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">README</span>.<span class="nv">md</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">SUPPORT</span>.<span class="nv">md</span>
+│<span class="w">   </span>└──<span class="w"> </span><span class="nv">TROUBLESHOOTING</span>.<span class="nv">md</span>
+│
+├──<span class="w"> </span><span class="nv">cicd</span><span class="o">/</span><span class="w">                             </span>#<span class="w"> </span><span class="nv">CI</span><span class="o">/</span><span class="nv">CD</span><span class="w"> </span><span class="nv">Automation</span><span class="w"> </span><span class="ss">(</span><span class="nv">NEW</span><span class="ss">)</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">github</span><span class="o">-</span><span class="nv">actions</span><span class="o">/</span>
+│<span class="w">   </span>│<span class="w">   </span>├──<span class="w"> </span><span class="nv">deploy</span><span class="o">-</span><span class="nv">dev</span>.<span class="nv">yml</span><span class="w">            </span>#<span class="w"> </span><span class="nv">Dev</span><span class="w"> </span><span class="nv">deployment</span><span class="w"> </span><span class="nv">workflow</span>
+│<span class="w">   </span>│<span class="w">   </span>├──<span class="w"> </span><span class="nv">deploy</span><span class="o">-</span><span class="nv">qa</span>.<span class="nv">yml</span><span class="w">             </span>#<span class="w"> </span><span class="nv">QA</span><span class="w"> </span><span class="nv">deployment</span><span class="w"> </span><span class="nv">workflow</span>
+│<span class="w">   </span>│<span class="w">   </span>├──<span class="w"> </span><span class="nv">deploy</span><span class="o">-</span><span class="nv">prod</span>.<span class="nv">yml</span><span class="w">           </span>#<span class="w"> </span><span class="nv">Prod</span><span class="w"> </span><span class="nv">deployment</span><span class="w"> </span><span class="nv">workflow</span>
+│<span class="w">   </span>│<span class="w">   </span>└──<span class="w"> </span><span class="nv">test</span>.<span class="nv">yml</span><span class="w">                  </span>#<span class="w"> </span><span class="nv">Testing</span><span class="w"> </span><span class="nv">workflow</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">scripts</span><span class="o">/</span>
+│<span class="w">   </span>│<span class="w">   </span>├──<span class="w"> </span><span class="nv">deploy</span><span class="o">-</span><span class="nv">stack</span>.<span class="nv">sh</span><span class="w">           </span>#<span class="w"> </span><span class="nv">Stack</span><span class="w"> </span><span class="nv">deployment</span><span class="w"> </span><span class="nv">script</span>
+│<span class="w">   </span>│<span class="w">   </span>└──<span class="w"> </span><span class="nv">validate</span><span class="o">-</span><span class="nv">template</span>.<span class="nv">sh</span><span class="w">      </span>#<span class="w"> </span><span class="nv">Template</span><span class="w"> </span><span class="nv">validation</span><span class="w"> </span><span class="nv">script</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">README</span>.<span class="nv">md</span>
+│<span class="w">   </span>└──<span class="w"> </span><span class="nv">SUPPORT</span>.<span class="nv">md</span>
+│
+├──<span class="w"> </span><span class="nv">scripts</span><span class="o">/</span><span class="w">                          </span>#<span class="w"> </span><span class="nv">Utility</span><span class="w"> </span><span class="nv">Scripts</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">deploy</span><span class="o">-</span><span class="nv">all</span>.<span class="nv">sh</span><span class="w">                </span>#<span class="w"> </span><span class="nv">Deploy</span><span class="w"> </span><span class="nv">entire</span><span class="w"> </span><span class="nv">infrastructure</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">destroy</span><span class="o">-</span><span class="nv">all</span>.<span class="nv">sh</span><span class="w">               </span>#<span class="w"> </span><span class="nv">Destroy</span><span class="w"> </span><span class="nv">entire</span><span class="w"> </span><span class="nv">infrastructure</span>
+│<span class="w">   </span>└──<span class="w"> </span><span class="nv">validate</span><span class="o">-</span><span class="nv">all</span>.<span class="nv">sh</span><span class="w">              </span>#<span class="w"> </span><span class="nv">Validate</span><span class="w"> </span><span class="nv">all</span><span class="w"> </span><span class="nv">templates</span>
+│
+├──<span class="w"> </span><span class="nv">docs</span><span class="o">/</span><span class="w">                             </span>#<span class="w"> </span><span class="nv">Documentation</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">architecture</span>.<span class="nv">md</span><span class="w">               </span>#<span class="w"> </span><span class="nv">Architecture</span><span class="w"> </span><span class="nv">documentation</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">deployment</span><span class="o">-</span><span class="nv">guide</span>.<span class="nv">md</span><span class="w">           </span>#<span class="w"> </span><span class="nv">Deployment</span><span class="w"> </span><span class="nv">guide</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">security</span><span class="o">-</span><span class="nv">guide</span>.<span class="nv">md</span><span class="w">             </span>#<span class="w"> </span><span class="nv">Security</span><span class="w"> </span><span class="nv">best</span><span class="w"> </span><span class="nv">practices</span>
+│<span class="w">   </span>└──<span class="w"> </span><span class="nv">operations</span><span class="o">-</span><span class="nv">runbook</span>.<span class="nv">md</span><span class="w">         </span>#<span class="w"> </span><span class="nv">Operations</span><span class="w"> </span><span class="nv">runbook</span>
+│
+├──<span class="w"> </span><span class="nv">README</span>.<span class="nv">md</span><span class="w">                         </span>#<span class="w"> </span><span class="nv">Main</span><span class="w"> </span><span class="nv">project</span><span class="w"> </span><span class="nv">README</span>
+├──<span class="w"> </span><span class="nv">README</span><span class="o">-</span><span class="nv">BMC</span><span class="o">-</span><span class="mi">340</span><span class="nv">B</span>.<span class="nv">md</span><span class="w">               </span>#<span class="w"> </span><span class="nv">This</span><span class="w"> </span><span class="nv">file</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">BMC</span><span class="w"> </span><span class="mi">340</span><span class="nv">B</span><span class="w"> </span><span class="nv">specific</span>
+└──<span class="w"> </span><span class="nv">imp</span><span class="o">-</span><span class="nv">plan</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">next</span>.<span class="nv">md</span><span class="w">              </span>#<span class="w"> </span><span class="nv">Improvement</span><span class="w"> </span><span class="nv">plan</span>
+</code></pre></div>
+
+<h2 id="components">🎯 Components</h2>
+<h3 id="1-networking">1. Networking</h3>
+<p><strong>Purpose</strong>: Creates isolated VPCs for Dev, QA, and Prod environments</p>
+<p><strong>Components</strong>:<br />
+- <strong>VPCs</strong>: Separate VPCs for each environment<br />
+- <strong>Subnets</strong>: Public and private subnets across multiple AZs<br />
+- <strong>Route Tables</strong>: Public (IGW) and private (NAT Gateway) routing<br />
+- <strong>NAT Gateways</strong>: Outbound internet access for private subnets<br />
+- <strong>VPC Endpoints</strong>: Private connectivity to AWS services (S3, Glue, Secrets Manager)</p>
+<p><strong>Deployment</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>vpc
+./deploy-multiple-vpcs.sh<span class="w"> </span>us-east-1
+</code></pre></div>
+
+<p><strong>Key Features</strong>:<br />
+- Multi-AZ deployment for high availability<br />
+- Isolated environments (Dev/QA/Prod)<br />
+- VPC endpoints for cost optimization<br />
+- Dynamic CIDR allocation</p>
+<h3 id="2-security">2. Security</h3>
+<p><strong>Purpose</strong>: Implements comprehensive security controls</p>
+<p><strong>Components</strong>:<br />
+- <strong>WAF (Web Application Firewall)</strong>: Protects web applications from common attacks<br />
+- <strong>IAM Roles</strong>: Least-privilege access policies<br />
+- <strong>Security Groups</strong>: Network-level access control<br />
+- <strong>SFTP Access Policies</strong>: Secure file transfer policies<br />
+- <strong>Secrets Manager</strong>: Secure credential storage</p>
+<p><strong>Deployment</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>security
+aws<span class="w"> </span>cloudformation<span class="w"> </span>create-stack<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--stack-name<span class="w"> </span>security-dev<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--template-body<span class="w"> </span>file://waf-template.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--parameters<span class="w"> </span>file://parameters-security-dev.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--capabilities<span class="w"> </span>CAPABILITY_NAMED_IAM<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--region<span class="w"> </span>us-east-1
+</code></pre></div>
+
+<p><strong>Key Features</strong>:<br />
+- WAF rules for OWASP Top 10 protection<br />
+- IAM roles with least privilege<br />
+- Security groups with minimal required access<br />
+- SFTP user access policies<br />
+- Encrypted secrets storage</p>
+<h3 id="3-compute">3. Compute</h3>
+<p><strong>Purpose</strong>: Provides scalable compute resources for each environment</p>
+<p><strong>Components</strong>:<br />
+- <strong>Auto Scaling Groups</strong>: Auto-scaling EC2 instances<br />
+- <strong>Application Load Balancers</strong>: Traffic distribution<br />
+- <strong>Target Groups</strong>: Health checks and routing<br />
+- <strong>EC2 Instances</strong>: Application servers<br />
+- <strong>Launch Templates</strong>: Standardized instance configuration</p>
+<p><strong>Deployment</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>compute
+aws<span class="w"> </span>cloudformation<span class="w"> </span>create-stack<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--stack-name<span class="w"> </span>compute-dev<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--template-body<span class="w"> </span>file://autoscaling-ec2-template.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--parameters<span class="w"> </span>file://parameters-compute-dev.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--capabilities<span class="w"> </span>CAPABILITY_NAMED_IAM<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--region<span class="w"> </span>us-east-1
+</code></pre></div>
+
+<p><strong>Key Features</strong>:<br />
+- Environment-specific scaling (Dev: 1-3, QA: 2-5, Prod: 2-10)<br />
+- Health checks (EC2 for Dev, ELB for QA/Prod)<br />
+- Multi-AZ deployment<br />
+- SSM Session Manager for secure access</p>
+<h3 id="4-storage">4. Storage</h3>
+<p><strong>Purpose</strong>: Manages S3 buckets for data storage and web hosting</p>
+<p><strong>Components</strong>:<br />
+- <strong>S3 Input Buckets</strong>: Ingest data from external sources<br />
+- <strong>S3 Output Buckets</strong>: Store processed data<br />
+- <strong>S3 Web Buckets</strong>: Host static web content<br />
+- <strong>Bucket Policies</strong>: Access control<br />
+- <strong>Lifecycle Policies</strong>: Cost optimization</p>
+<p><strong>Deployment</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>storage
+aws<span class="w"> </span>cloudformation<span class="w"> </span>create-stack<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--stack-name<span class="w"> </span>storage-dev<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--template-body<span class="w"> </span>file://s3-buckets-template.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--parameters<span class="w"> </span>file://parameters-storage-dev.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--region<span class="w"> </span>us-east-1
+</code></pre></div>
+
+<p><strong>Key Features</strong>:<br />
+- Environment-specific buckets (Dev/QA/Prod)<br />
+- Versioning enabled<br />
+- Encryption at rest<br />
+- Lifecycle policies for cost optimization<br />
+- CloudFront integration ready</p>
+<h3 id="5-data-processing">5. Data Processing</h3>
+<p><strong>Purpose</strong>: ETL processing between S3 and Snowflake</p>
+<p><strong>Components</strong>:<br />
+- <strong>AWS Glue Jobs</strong>: ETL processing jobs<br />
+- <strong>Glue Connections</strong>: Snowflake connectivity<br />
+- <strong>Glue Databases</strong>: Data catalog<br />
+- <strong>Glue Crawlers</strong>: Schema discovery (optional)</p>
+<p><strong>Deployment</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>data
+aws<span class="w"> </span>cloudformation<span class="w"> </span>create-stack<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--stack-name<span class="w"> </span>data-dev<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--template-body<span class="w"> </span>file://glue-snowflake-template.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--parameters<span class="w"> </span>file://parameters-glue-dev.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--capabilities<span class="w"> </span>CAPABILITY_NAMED_IAM<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--region<span class="w"> </span>us-east-1
+</code></pre></div>
+
+<p><strong>Key Features</strong>:<br />
+- Secure Snowflake connection via Secrets Manager<br />
+- Environment-specific Glue jobs<br />
+- Configurable worker types and counts<br />
+- CloudWatch logging and monitoring</p>
+<h3 id="6-integration">6. Integration</h3>
+<p><strong>Purpose</strong>: Connects AWS services to Snowflake securely</p>
+<p><strong>Components</strong>:<br />
+- <strong>VPC Private Link</strong>: Private connectivity to Snowflake<br />
+- <strong>Snowflake Connection</strong>: JDBC connection configuration<br />
+- <strong>Connection String Management</strong>: Dynamic connection strings<br />
+- <strong>Secrets Manager Integration</strong>: Credential management</p>
+<p><strong>Deployment</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>integration
+aws<span class="w"> </span>cloudformation<span class="w"> </span>create-stack<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--stack-name<span class="w"> </span>integration-dev<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--template-body<span class="w"> </span>file://privatelink-template.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--parameters<span class="w"> </span>file://parameters-integration-dev.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--capabilities<span class="w"> </span>CAPABILITY_NAMED_IAM<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--region<span class="w"> </span>us-east-1
+</code></pre></div>
+
+<p><strong>Key Features</strong>:<br />
+- Private connectivity (no internet exposure)<br />
+- Secure credential management<br />
+- Connection string parameterization<br />
+- Multi-environment support</p>
+<h3 id="7-delivery">7. Delivery</h3>
+<p><strong>Purpose</strong>: Provides web and API access to the platform</p>
+<p><strong>Components</strong>:<br />
+- <strong>CloudFront</strong>: CDN for static content<br />
+- <strong>Route 53</strong>: DNS management<br />
+- <strong>API Gateway</strong>: RESTful API endpoints<br />
+- <strong>SSL/TLS Certificates</strong>: ACM certificates</p>
+<p><strong>Deployment</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>delivery
+aws<span class="w"> </span>cloudformation<span class="w"> </span>create-stack<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--stack-name<span class="w"> </span>delivery-dev<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--template-body<span class="w"> </span>file://cloudfront-template.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--parameters<span class="w"> </span>file://parameters-delivery-dev.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--capabilities<span class="w"> </span>CAPABILITY_NAMED_IAM<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--region<span class="w"> </span>us-east-1
+</code></pre></div>
+
+<p><strong>Key Features</strong>:<br />
+- Global content delivery<br />
+- Custom domain support<br />
+- API rate limiting<br />
+- SSL/TLS encryption<br />
+- WAF integration</p>
+<h3 id="8-cicd">8. CI/CD</h3>
+<p><strong>Purpose</strong>: Automated build and deployment</p>
+<p><strong>Components</strong>:<br />
+- <strong>GitHub Actions</strong>: Workflow automation<br />
+- <strong>Deployment Scripts</strong>: Stack deployment automation<br />
+- <strong>Validation Scripts</strong>: Template validation<br />
+- <strong>Environment Promotion</strong>: Dev → QA → Prod</p>
+<p><strong>Workflows</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># .github/workflows/deploy-dev.yml</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deploy to Dev</span>
+<span class="nt">on</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">push</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">develop</span><span class="p p-Indicator">]</span>
+<span class="nt">jobs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">deploy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v2</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deploy Infrastructure</span>
+<span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./scripts/deploy-stack.sh dev</span>
+</code></pre></div>
+
+<p><strong>Key Features</strong>:<br />
+- Automated deployments<br />
+- Environment promotion workflows<br />
+- Template validation<br />
+- Rollback capabilities<br />
+- Deployment notifications</p>
+<h2 id="quick-start">🚀 Quick Start</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<ol>
+<li><strong>AWS Account</strong> with appropriate permissions</li>
+<li><strong>AWS CLI</strong> installed and configured</li>
+<li><strong>GitHub Repository</strong> for CI/CD</li>
+<li><strong>Snowflake Account</strong> with credentials</li>
+<li><strong>Domain Name</strong> (for Route 53, optional)</li>
+</ol>
+<h3 id="deployment-order">Deployment Order</h3>
+<ol>
+<li>
+<p><strong>Networking</strong> (VPCs)<br />
+<code>bash
+   cd vpc &amp;&amp; ./deploy-multiple-vpcs.sh us-east-1</code></p>
+</li>
+<li>
+<p><strong>Security</strong> (WAF, IAM, Security Groups)<br />
+<code>bash
+   cd security &amp;&amp; ./deploy-all-security.sh</code></p>
+</li>
+<li>
+<p><strong>Storage</strong> (S3 Buckets)<br />
+<code>bash
+   cd storage &amp;&amp; ./deploy-all-storage.sh</code></p>
+</li>
+<li>
+<p><strong>Compute</strong> (ASG, ALB, EC2)<br />
+<code>bash
+   cd compute &amp;&amp; ./deploy-all-compute.sh</code></p>
+</li>
+<li>
+<p><strong>Integration</strong> (Private Link, Snowflake)<br />
+<code>bash
+   cd integration &amp;&amp; ./deploy-all-integration.sh</code></p>
+</li>
+<li>
+<p><strong>Data Processing</strong> (Glue Jobs)<br />
+<code>bash
+   cd data &amp;&amp; ./deploy-all-data.sh</code></p>
+</li>
+<li>
+<p><strong>Delivery</strong> (CloudFront, Route 53, API Gateway)<br />
+<code>bash
+   cd delivery &amp;&amp; ./deploy-all-delivery.sh</code></p>
+</li>
+</ol>
+<h3 id="complete-deployment">Complete Deployment</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Deploy entire infrastructure</span>
+./scripts/deploy-all.sh<span class="w"> </span>dev
+
+<span class="c1"># Validate all templates</span>
+./scripts/validate-all.sh
+
+<span class="c1"># Destroy infrastructure (careful!)</span>
+./scripts/destroy-all.sh<span class="w"> </span>dev
+</code></pre></div>
+
+<h2 id="environment-configuration">📊 Environment Configuration</h2>
+<h3 id="development">Development</h3>
+<ul>
+<li><strong>Purpose</strong>: Development and testing</li>
+<li><strong>Resources</strong>: Minimal (cost-optimized)</li>
+<li><strong>Scaling</strong>: 1-3 instances</li>
+<li><strong>Monitoring</strong>: Basic CloudWatch</li>
+<li><strong>Data</strong>: Sample/test data</li>
+</ul>
+<h3 id="qa">QA</h3>
+<ul>
+<li><strong>Purpose</strong>: Quality assurance and staging</li>
+<li><strong>Resources</strong>: Medium-sized</li>
+<li><strong>Scaling</strong>: 2-5 instances</li>
+<li><strong>Monitoring</strong>: Detailed CloudWatch</li>
+<li><strong>Data</strong>: Production-like test data</li>
+</ul>
+<h3 id="production">Production</h3>
+<ul>
+<li><strong>Purpose</strong>: Live production environment</li>
+<li><strong>Resources</strong>: Full-scale</li>
+<li><strong>Scaling</strong>: 2-10 instances (auto-scaling)</li>
+<li><strong>Monitoring</strong>: Comprehensive (CloudWatch + custom)</li>
+<li><strong>Data</strong>: Production data</li>
+<li><strong>Security</strong>: Enhanced (WAF, enhanced monitoring)</li>
+</ul>
+<h2 id="security-considerations">🔒 Security Considerations</h2>
+<h3 id="network-security">Network Security</h3>
+<ul>
+<li>Private subnets for compute resources</li>
+<li>Security groups with least privilege</li>
+<li>VPC endpoints for AWS services</li>
+<li>Private Link for Snowflake connectivity</li>
+</ul>
+<h3 id="access-control">Access Control</h3>
+<ul>
+<li>IAM roles with least privilege</li>
+<li>MFA required for production</li>
+<li>SSM Session Manager (no SSH keys)</li>
+<li>Secrets Manager for credentials</li>
+</ul>
+<h3 id="data-protection">Data Protection</h3>
+<ul>
+<li>Encryption at rest (S3, EBS)</li>
+<li>Encryption in transit (TLS/SSL)</li>
+<li>Secrets Manager for sensitive data</li>
+<li>VPC Flow Logs for monitoring</li>
+</ul>
+<h3 id="compliance">Compliance</h3>
+<ul>
+<li>HIPAA considerations (if applicable)</li>
+<li>Audit logging (CloudTrail)</li>
+<li>Access logging (S3, CloudFront)</li>
+<li>Regular security reviews</li>
+</ul>
+<h2 id="cost-optimization">💰 Cost Optimization</h2>
+<h3 id="development_1">Development</h3>
+<ul>
+<li>Use smaller instance types</li>
+<li>Single NAT Gateway</li>
+<li>Basic monitoring</li>
+<li>Spot instances where possible</li>
+</ul>
+<h3 id="qa_1">QA</h3>
+<ul>
+<li>Medium instance types</li>
+<li>Standard monitoring</li>
+<li>Reserved instances for predictable workloads</li>
+</ul>
+<h3 id="production_1">Production</h3>
+<ul>
+<li>Right-sized instances</li>
+<li>Reserved instances/Savings Plans</li>
+<li>Detailed monitoring</li>
+<li>Cost alerts and budgets</li>
+</ul>
+<h2 id="monitoring-and-operations">📈 Monitoring and Operations</h2>
+<h3 id="cloudwatch-dashboards">CloudWatch Dashboards</h3>
+<ul>
+<li>Infrastructure health</li>
+<li>Application performance</li>
+<li>Cost monitoring</li>
+<li>Security events</li>
+</ul>
+<h3 id="alarms">Alarms</h3>
+<ul>
+<li>High CPU/Memory</li>
+<li>Failed job executions</li>
+<li>Unusual API activity</li>
+<li>Cost threshold breaches</li>
+</ul>
+<h3 id="logging">Logging</h3>
+<ul>
+<li>CloudWatch Logs (applications)</li>
+<li>VPC Flow Logs (network)</li>
+<li>CloudTrail (API calls)</li>
+<li>S3 Access Logs</li>
+</ul>
+<h2 id="cicd-workflow">🔄 CI/CD Workflow</h2>
+<div class="codehilite"><pre><span></span><code>┌─────────────┐
+│   Developer │
+│   Push Code │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ GitHub Repo │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│ GitHub      │─────▶│ Deploy Dev  │─────▶│ Deploy QA   │
+│ Actions     │      │             │      │             │
+└─────────────┘      └─────────────┘      └──────┬──────┘
+                                                    │
+                                                    ▼
+                                            ┌─────────────┐
+                                            │ Deploy Prod │
+                                            │ (Manual)    │
+                                            └─────────────┘
+</code></pre></div>
+
+<h2 id="documentation">📚 Documentation</h2>
+<ul>
+<li><strong><a href="docs/architecture.md">Architecture Guide</a></strong> - Detailed architecture documentation</li>
+<li><strong><a href="docs/deployment-guide.md">Deployment Guide</a></strong> - Step-by-step deployment instructions</li>
+<li><strong><a href="docs/security-guide.md">Security Guide</a></strong> - Security best practices</li>
+<li><strong><a href="docs/operations-runbook.md">Operations Runbook</a></strong> - Day-to-day operations</li>
+</ul>
+<h2 id="maintenance">🛠️ Maintenance</h2>
+<h3 id="regular-tasks">Regular Tasks</h3>
+<ul>
+<li>Review CloudWatch metrics weekly</li>
+<li>Update security groups monthly</li>
+<li>Review IAM permissions quarterly</li>
+<li>Cost optimization review monthly</li>
+</ul>
+<h3 id="updates">Updates</h3>
+<ul>
+<li>Update CloudFormation templates</li>
+<li>Patch EC2 instances (via Systems Manager)</li>
+<li>Update Glue job scripts</li>
+<li>Rotate secrets regularly</li>
+</ul>
+<h2 id="support">🆘 Support</h2>
+<ul>
+<li><strong>Troubleshooting</strong>: See <code>TROUBLESHOOTING.md</code> in each folder</li>
+<li><strong>Support Guide</strong>: See <code>SUPPORT.md</code> in each folder</li>
+<li><strong>AWS Support</strong>: https://console.aws.amazon.com/support/</li>
+<li><strong>Documentation</strong>: See <code>README.md</code> in each folder</li>
+</ul>
+<h2 id="license">📝 License</h2>
+<p>This project is proprietary and confidential.</p>
+<h2 id="contributors">👥 Contributors</h2>
+<ul>
+<li>Infrastructure Team</li>
+<li>DevOps Team</li>
+<li>Security Team</li>
+</ul>
+<h2 id="version-history">📅 Version History</h2>
+<ul>
+<li><strong>v1.0</strong> - Initial release with VPC, Compute, and Data Processing</li>
+<li><strong>v2.0</strong> - Added Security, Storage, Integration, Delivery, and CI/CD</li>
+<li><strong>v2.1</strong> - Enhanced monitoring and cost optimization</li>
+</ul>
+<hr />
+<p><strong>Note</strong>: This is a comprehensive infrastructure template for BMC 340B. Ensure all parameters are configured correctly before deployment to production.</p>
+    
+    <hr>
+    <footer style="text-align: center; color: #666; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+        <p>BMC 340B Cloud Infrastructure Documentation</p>
+        <p style="font-size: 0.9em;">Generated from README-BMC-340B.md</p>
+    </footer>
+</body>
+</html>
