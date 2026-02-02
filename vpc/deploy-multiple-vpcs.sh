@@ -7,6 +7,8 @@ set -e
 
 REGION=${1:-us-east-1}
 TEMPLATE_FILE="vpc-template.yaml"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
 # Colors for output
 GREEN='\033[0;32m'

@@ -27,60 +27,52 @@ Each VPC includes:
 2. EC2 Key Pair created in your AWS account (for temporary testing)
 3. Appropriate IAM permissions to create VPC, EC2, IAM resources
 
+## Project Structure
+
+```
+VPC-BMC/
+├── vpc/                              # VPC Infrastructure Templates
+│   ├── vpc-template.yaml             # Main VPC CloudFormation template
+│   ├── parameters-vpc1.json          # VPC 1 parameters (dev)
+│   ├── parameters-vpc2.json          # VPC 2 parameters (staging)
+│   ├── parameters-vpc3.json          # VPC 3 parameters (prod)
+│   ├── deploy-multiple-vpcs.sh      # Deployment script
+│   └── README.md                     # VPC-specific documentation
+├── compute/                          # EC2/Compute Templates
+│   ├── autoscaling-ec2-template.yaml # Auto Scaling Group template
+│   ├── ec2-instance-template.yaml   # Single EC2 instance template
+│   ├── parameters-autoscaling-dev.json      # Dev environment parameters
+│   ├── parameters-autoscaling-staging.json  # Staging environment parameters
+│   ├── parameters-autoscaling-prod.json     # Production environment parameters
+│   └── README.md                     # Compute-specific documentation
+├── README.md                         # Main project documentation
+└── imp-plan for next.md              # Architecture improvement plan
+```
+
 ## Deployment
 
-### Single VPC Deployment
+### VPC Deployment
 
+See [vpc/README.md](vpc/README.md) for detailed VPC deployment instructions.
+
+**Quick Start:**
 ```bash
-aws cloudformation create-stack \
-  --stack-name vpc-1 \
-  --template-body file://vpc-template.yaml \
-  --parameters file://parameters-vpc1.json \
-  --region us-east-1
+cd vpc
+./deploy-multiple-vpcs.sh us-east-1
 ```
 
-### Multiple VPC Deployment
+### Compute/EC2 Deployment
 
-Deploy multiple VPCs using different parameter files:
+See [compute/README.md](compute/README.md) for detailed compute deployment instructions.
 
+**Quick Start:**
 ```bash
-# Deploy VPC 1
+cd compute
 aws cloudformation create-stack \
-  --stack-name vpc-1 \
-  --template-body file://vpc-template.yaml \
-  --parameters file://parameters-vpc1.json \
-  --region us-east-1
-
-# Deploy VPC 2
-aws cloudformation create-stack \
-  --stack-name vpc-2 \
-  --template-body file://vpc-template.yaml \
-  --parameters file://parameters-vpc2.json \
-  --region us-east-1
-
-# Deploy VPC 3
-aws cloudformation create-stack \
-  --stack-name vpc-3 \
-  --template-body file://vpc-template.yaml \
-  --parameters file://parameters-vpc3.json \
-  --region us-east-1
-```
-
-### Update Existing Stack
-
-```bash
-aws cloudformation update-stack \
-  --stack-name vpc-1 \
-  --template-body file://vpc-template.yaml \
-  --parameters file://parameters-vpc1.json \
-  --region us-east-1
-```
-
-### Delete Stack
-
-```bash
-aws cloudformation delete-stack \
-  --stack-name vpc-1 \
+  --stack-name autoscaling-dev \
+  --template-body file://autoscaling-ec2-template.yaml \
+  --parameters file://parameters-autoscaling-dev.json \
+  --capabilities CAPABILITY_NAMED_IAM \
   --region us-east-1
 ```
 
@@ -485,32 +477,18 @@ aws cloudwatch describe-alarms \
    - Implement VPC Peering for inter-VPC communication
    - Use PrivateLink for AWS service access
 
-### Template Files Structure
-
-```
-VPC-BMC/
-├── vpc-template.yaml                    # Main VPC template
-├── autoscaling-ec2-template.yaml        # Auto Scaling Group template
-├── ec2-instance-template.yaml           # Single EC2 instance template
-├── parameters-vpc1.json                  # VPC parameters
-├── parameters-vpc2.json                  # VPC parameters
-├── parameters-vpc3.json                  # VPC parameters
-├── parameters-autoscaling-dev.json      # Auto Scaling dev parameters
-├── parameters-autoscaling-staging.json  # Auto Scaling staging parameters
-├── parameters-autoscaling-prod.json     # Auto Scaling prod parameters
-├── deploy-multiple-vpcs.sh              # Deployment script
-└── README.md                            # This file
-```
-
 ### Complete Deployment Workflow
 
 1. **Deploy VPC Infrastructure**
    ```bash
+   cd vpc
    ./deploy-multiple-vpcs.sh us-east-1
    ```
 
 2. **Deploy Auto Scaling Groups**
    ```bash
+   cd compute
+   
    # Dev
    aws cloudformation create-stack \
      --stack-name autoscaling-dev \
