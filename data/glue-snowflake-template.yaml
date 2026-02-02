@@ -1,0 +1,426 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS Glue and Snowflake Integration Template - Creates Glue connections, jobs, and Snowflake integration with secure connection string management'
+
+Parameters:
+  VpcStackName:
+    Type: String
+    Description: Name of the VPC CloudFormation stack
+    Default: vpc-1
+  
+  Environment:
+    Type: String
+    Description: Environment name (dev/staging/prod)
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+  
+  ApplicationName:
+    Type: String
+    Description: Application name for resource naming
+    Default: DataPipeline
+  
+  # Snowflake Connection Parameters
+  SnowflakeAccount:
+    Type: String
+    Description: Snowflake account identifier (e.g., xy12345.us-east-1)
+    NoEcho: true
+  
+  SnowflakeUser:
+    Type: String
+    Description: Snowflake username
+    NoEcho: true
+  
+  SnowflakePassword:
+    Type: String
+    Description: Snowflake password (will be stored in Secrets Manager)
+    NoEcho: true
+  
+  SnowflakeWarehouse:
+    Type: String
+    Description: Snowflake warehouse name
+    Default: COMPUTE_WH
+  
+  SnowflakeDatabase:
+    Type: String
+    Description: Snowflake database name
+    Default: MY_DATABASE
+  
+  SnowflakeSchema:
+    Type: String
+    Description: Snowflake schema name
+    Default: PUBLIC
+  
+  SnowflakeRole:
+    Type: String
+    Description: Snowflake role name (optional)
+    Default: ''
+  
+  # Glue Connection Configuration
+  GlueConnectionName:
+    Type: String
+    Description: Name for the Glue connection
+    Default: snowflake-connection
+  
+  GlueConnectionType:
+    Type: String
+    Description: Glue connection type
+    Default: jdbc
+    AllowedValues:
+      - jdbc
+      - sftp
+      - mongodb
+      - marketplace
+  
+  GlueConnectionSubnetId:
+    Type: String
+    Description: Subnet ID for Glue connection (leave empty to use VPC private subnet)
+    Default: ''
+  
+  GlueConnectionSecurityGroupIds:
+    Type: CommaDelimitedList
+    Description: Security group IDs for Glue connection (leave empty to create new)
+    Default: ''
+  
+  # Glue Job Configuration
+  CreateGlueJob:
+    Type: String
+    Description: Create a sample Glue ETL job
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+  
+  GlueJobName:
+    Type: String
+    Description: Name for the Glue ETL job
+    Default: snowflake-etl-job
+  
+  GlueJobType:
+    Type: String
+    Description: Glue job type
+    Default: glueetl
+    AllowedValues:
+      - glueetl
+      - spark
+      - python
+  
+  GlueJobScriptLocation:
+    Type: String
+    Description: S3 path to Glue job script (e.g., s3://my-bucket/scripts/my-job.py)
+    Default: ''
+  
+  GlueJobPythonVersion:
+    Type: String
+    Description: Python version for Glue job
+    Default: '3'
+    AllowedValues:
+      - '2'
+      - '3'
+  
+  GlueWorkerType:
+    Type: String
+    Description: Glue worker type
+    Default: G.1X
+    AllowedValues:
+      - G.1X
+      - G.2X
+      - G.4X
+      - G.8X
+      - Standard
+  
+  GlueNumberOfWorkers:
+    Type: Number
+    Description: Number of Glue workers
+    Default: 2
+    MinValue: 2
+    MaxValue: 100
+  
+  # S3 Configuration
+  GlueTempDir:
+    Type: String
+    Description: S3 path for Glue temporary files
+    Default: ''
+  
+  GlueScriptsBucket:
+    Type: String
+    Description: S3 bucket for Glue scripts
+    Default: ''
+
+Mappings:
+  EnvironmentConfig:
+    dev:
+      WorkerType: G.1X
+      NumberOfWorkers: 2
+    staging:
+      WorkerType: G.2X
+      NumberOfWorkers: 4
+    prod:
+      WorkerType: G.4X
+      NumberOfWorkers: 10
+
+Resources:
+  # Secrets Manager Secret for Snowflake Credentials
+  SnowflakeSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${ApplicationName}-${Environment}-snowflake-credentials'
+      Description: Snowflake connection credentials
+      SecretString: !Sub |
+        {
+          "account": "${SnowflakeAccount}",
+          "user": "${SnowflakeUser}",
+          "password": "${SnowflakePassword}",
+          "warehouse": "${SnowflakeWarehouse}",
+          "database": "${SnowflakeDatabase}",
+          "schema": "${SnowflakeSchema}",
+          "role": "${SnowflakeRole}"
+        }
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}-${Environment}-Snowflake-Secret'
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # IAM Role for Glue Service
+  GlueServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ApplicationName}-${Environment}-Glue-ServiceRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+      Policies:
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource: !Ref SnowflakeSecret
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::${GlueScriptsBucket}/*'
+                  - !Sub 'arn:aws:s3:::${GlueScriptsBucket}'
+                  - !If
+                    - HasTempDir
+                    - !Sub 'arn:aws:s3:::${GlueTempDir}/*'
+                    - !Ref AWS::NoValue
+                  - !If
+                    - HasTempDir
+                    - !Sub 'arn:aws:s3:::${GlueTempDir}'
+                    - !Ref AWS::NoValue
+        - PolicyName: CloudWatchLogsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}-${Environment}-Glue-Role'
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # Security Group for Glue Connection
+  GlueConnectionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateSecurityGroup
+    Properties:
+      GroupName: !Sub '${ApplicationName}-${Environment}-Glue-SG'
+      GroupDescription: Security group for AWS Glue connections
+      VpcId: !ImportValue
+        Fn::Sub: '${VpcStackName}-VPC-ID'
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS access for Snowflake
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP access
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}-${Environment}-Glue-SG'
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # Glue Connection
+  GlueConnection:
+    Type: AWS::Glue::Connection
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      ConnectionInput:
+        Name: !Sub '${GlueConnectionName}-${Environment}'
+        ConnectionType: !Ref GlueConnectionType
+        ConnectionProperties:
+          JDBC_CONNECTION_URL: !Sub
+            - 'jdbc:snowflake://${Account}.snowflakecomputing.com/?warehouse=${Warehouse}&db=${Database}&schema=${Schema}'
+            - Account: !Ref SnowflakeAccount
+              Warehouse: !Ref SnowflakeWarehouse
+              Database: !Ref SnowflakeDatabase
+              Schema: !Ref SnowflakeSchema
+          JDBC_ENFORCE_SSL: 'true'
+          SECRET_ID: !Ref SnowflakeSecret
+        PhysicalConnectionRequirements:
+          SubnetId: !If
+            - UseProvidedSubnet
+            - !Ref GlueConnectionSubnetId
+            - !ImportValue
+              Fn::Sub: '${VpcStackName}-Private-Subnet-1-ID'
+          SecurityGroupIdList:
+            - !If
+              - UseProvidedSecurityGroups
+              - !Select [0, !Ref GlueConnectionSecurityGroupIds]
+              - !GetAtt GlueConnectionSecurityGroup.GroupId
+        Description: !Sub 'Snowflake connection for ${Environment} environment'
+      Tags:
+        Environment: !Ref Environment
+        Application: !Ref ApplicationName
+  
+  # CloudWatch Log Group for Glue
+  GlueLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws-glue/jobs/${GlueJobName}-${Environment}'
+      RetentionInDays: 30
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}-${Environment}-Glue-Logs'
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # Glue ETL Job
+  GlueETLJob:
+    Type: AWS::Glue::Job
+    Condition: CreateJob
+    Properties:
+      Name: !Sub '${GlueJobName}-${Environment}'
+      Role: !GetAtt GlueServiceRole.Arn
+      Command:
+        Name: !Ref GlueJobType
+        ScriptLocation: !Ref GlueJobScriptLocation
+        PythonVersion: !If
+          - UsePython3
+          - '3'
+          - !Ref AWS::NoValue
+      DefaultArguments:
+        '--TempDir': !If
+          - HasTempDir
+          - !Sub 's3://${GlueTempDir}/temp/'
+          - !Ref AWS::NoValue
+        '--enable-glue-datacatalog': 'true'
+        '--enable-metrics': 'true'
+        '--enable-spark-ui': 'true'
+        '--spark-event-logs-path': !If
+          - HasTempDir
+          - !Sub 's3://${GlueTempDir}/spark-logs/'
+          - !Ref AWS::NoValue
+        '--connection-name': !GetAtt GlueConnection.Name
+        '--secret-id': !Ref SnowflakeSecret
+      GlueVersion: '4.0'
+      WorkerType: !Ref GlueWorkerType
+      NumberOfWorkers: !Ref GlueNumberOfWorkers
+      MaxRetries: 2
+      Timeout: 2880
+      Tags:
+        Environment: !Ref Environment
+        Application: !Ref ApplicationName
+  
+  # Glue Database (optional, for catalog)
+  GlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: !Sub '${ApplicationName}_${Environment}_snowflake_db'
+        Description: !Sub 'Glue database for Snowflake integration - ${Environment}'
+      Tags:
+        Environment: !Ref Environment
+        Application: !Ref ApplicationName
+
+Conditions:
+  CreateSecurityGroup: !Equals [!Join ['', !Ref GlueConnectionSecurityGroupIds], '']
+  UseProvidedSecurityGroups: !Not [!Equals [!Join ['', !Ref GlueConnectionSecurityGroupIds], '']]
+  UseProvidedSubnet: !Not [!Equals [!Ref GlueConnectionSubnetId, '']]
+  CreateJob: !Equals [!Ref CreateGlueJob, 'true']
+  HasTempDir: !Not [!Equals [!Ref GlueTempDir, '']]
+  UsePython3: !Equals [!Ref GlueJobPythonVersion, '3']
+
+Outputs:
+  GlueConnectionName:
+    Description: Glue connection name
+    Value: !GetAtt GlueConnection.Name
+    Export:
+      Name: !Sub '${AWS::StackName}-Glue-Connection-Name'
+  
+  GlueConnectionArn:
+    Description: Glue connection ARN
+    Value: !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:connection/${GlueConnection.Name}'
+    Export:
+      Name: !Sub '${AWS::StackName}-Glue-Connection-ARN'
+  
+  GlueServiceRoleArn:
+    Description: Glue service role ARN
+    Value: !GetAtt GlueServiceRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-Glue-ServiceRole-ARN'
+  
+  SnowflakeSecretArn:
+    Description: Snowflake credentials secret ARN
+    Value: !Ref SnowflakeSecret
+    Export:
+      Name: !Sub '${AWS::StackName}-Snowflake-Secret-ARN'
+  
+  SnowflakeSecretName:
+    Description: Snowflake credentials secret name
+    Value: !Ref SnowflakeSecret
+    Export:
+      Name: !Sub '${AWS::StackName}-Snowflake-Secret-Name'
+  
+  GlueJobName:
+    Description: Glue ETL job name
+    Condition: CreateJob
+    Value: !Ref GlueETLJob
+    Export:
+      Name: !Sub '${AWS::StackName}-Glue-Job-Name'
+  
+  GlueDatabaseName:
+    Description: Glue database name
+    Value: !Ref GlueDatabase
+    Export:
+      Name: !Sub '${AWS::StackName}-Glue-Database-Name'
+  
+  ConnectionString:
+    Description: Snowflake JDBC connection string (without credentials)
+    Value: !Sub
+      - 'jdbc:snowflake://${Account}.snowflakecomputing.com/?warehouse=${Warehouse}&db=${Database}&schema=${Schema}'
+      - Account: !Ref SnowflakeAccount
+        Warehouse: !Ref SnowflakeWarehouse
+        Database: !Ref SnowflakeDatabase
+        Schema: !Ref SnowflakeSchema

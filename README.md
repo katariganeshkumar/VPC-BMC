@@ -20,6 +20,8 @@ Each VPC includes:
 ✅ **Multiple VPC Support** - Deploy multiple VPCs using different parameter files
 ✅ **SSM Session Manager Ready** - IAM role and instance profile included
 ✅ **EC2 Key-Pair Support** - Temporary key-pair parameter for immediate testing
+✅ **AWS Glue & Snowflake Integration** - Secure data pipeline with connection string management
+✅ **Secrets Manager Integration** - Secure credential storage for Snowflake connections
 
 ## Prerequisites
 
@@ -37,14 +39,24 @@ VPC-BMC/
 │   ├── parameters-vpc2.json          # VPC 2 parameters (staging)
 │   ├── parameters-vpc3.json          # VPC 3 parameters (prod)
 │   ├── deploy-multiple-vpcs.sh      # Deployment script
-│   └── README.md                     # VPC-specific documentation
+│   ├── README.md                     # VPC-specific documentation
+│   ├── SUPPORT.md                    # VPC support guide
+│   └── TROUBLESHOOTING.md            # VPC troubleshooting guide
 ├── compute/                          # EC2/Compute Templates
 │   ├── autoscaling-ec2-template.yaml # Auto Scaling Group template
 │   ├── ec2-instance-template.yaml   # Single EC2 instance template
 │   ├── parameters-autoscaling-dev.json      # Dev environment parameters
 │   ├── parameters-autoscaling-staging.json  # Staging environment parameters
 │   ├── parameters-autoscaling-prod.json     # Production environment parameters
-│   └── README.md                     # Compute-specific documentation
+│   ├── README.md                     # Compute-specific documentation
+│   ├── SUPPORT.md                    # Compute support guide
+│   └── TROUBLESHOOTING.md            # Compute troubleshooting guide
+├── data/                             # Data Analytics Templates (NEW)
+│   ├── glue-snowflake-template.yaml  # AWS Glue & Snowflake integration
+│   ├── parameters-glue-snowflake-dev.json   # Dev environment parameters
+│   ├── parameters-glue-snowflake-prod.json # Prod environment parameters
+│   ├── glue-job-template.py          # Sample Glue ETL job script
+│   └── README.md                     # Data integration documentation
 ├── README.md                         # Main project documentation
 └── imp-plan for next.md              # Architecture improvement plan
 ```
@@ -72,6 +84,22 @@ aws cloudformation create-stack \
   --stack-name autoscaling-dev \
   --template-body file://autoscaling-ec2-template.yaml \
   --parameters file://parameters-autoscaling-dev.json \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region us-east-1
+```
+
+### Data Analytics Deployment (AWS Glue & Snowflake)
+
+See [data/README.md](data/README.md) for detailed data integration deployment instructions.
+
+**Quick Start:**
+```bash
+cd data
+# Update parameters file with your Snowflake credentials first
+aws cloudformation create-stack \
+  --stack-name glue-snowflake-dev \
+  --template-body file://glue-snowflake-template.yaml \
+  --parameters file://parameters-glue-snowflake-dev.json \
   --capabilities CAPABILITY_NAMED_IAM \
   --region us-east-1
 ```

@@ -1,0 +1,94 @@
+[
+  {
+    "ParameterKey": "VpcStackName",
+    "ParameterValue": "vpc-1"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "ApplicationName",
+    "ParameterValue": "DataPipeline"
+  },
+  {
+    "ParameterKey": "SnowflakeAccount",
+    "ParameterValue": "YOUR_ACCOUNT.us-east-1"
+  },
+  {
+    "ParameterKey": "SnowflakeUser",
+    "ParameterValue": "YOUR_USERNAME"
+  },
+  {
+    "ParameterKey": "SnowflakePassword",
+    "ParameterValue": "YOUR_PASSWORD"
+  },
+  {
+    "ParameterKey": "SnowflakeWarehouse",
+    "ParameterValue": "COMPUTE_WH"
+  },
+  {
+    "ParameterKey": "SnowflakeDatabase",
+    "ParameterValue": "MY_DATABASE"
+  },
+  {
+    "ParameterKey": "SnowflakeSchema",
+    "ParameterValue": "PUBLIC"
+  },
+  {
+    "ParameterKey": "SnowflakeRole",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "GlueConnectionName",
+    "ParameterValue": "snowflake-connection"
+  },
+  {
+    "ParameterKey": "GlueConnectionType",
+    "ParameterValue": "jdbc"
+  },
+  {
+    "ParameterKey": "GlueConnectionSubnetId",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "GlueConnectionSecurityGroupIds",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "CreateGlueJob",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "GlueJobName",
+    "ParameterValue": "snowflake-etl-job"
+  },
+  {
+    "ParameterKey": "GlueJobType",
+    "ParameterValue": "glueetl"
+  },
+  {
+    "ParameterKey": "GlueJobScriptLocation",
+    "ParameterValue": "s3://your-bucket/glue-scripts/snowflake-etl.py"
+  },
+  {
+    "ParameterKey": "GlueJobPythonVersion",
+    "ParameterValue": "3"
+  },
+  {
+    "ParameterKey": "GlueWorkerType",
+    "ParameterValue": "G.1X"
+  },
+  {
+    "ParameterKey": "GlueNumberOfWorkers",
+    "ParameterValue": "2"
+  },
+  {
+    "ParameterKey": "GlueTempDir",
+    "ParameterValue": "s3://your-bucket/glue-temp"
+  },
+  {
+    "ParameterKey": "GlueScriptsBucket",
+    "ParameterValue": "your-bucket"
+  }
+]
