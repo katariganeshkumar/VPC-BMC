@@ -34,6 +34,7 @@ deploy_stack() {
             --stack-name "$STACK_NAME" \
             --template-body file://"$TEMPLATE_FILE" \
             --parameters file://"$PARAMS_FILE" \
+            --capabilities CAPABILITY_NAMED_IAM \
             --region "$REGION" >/dev/null 2>&1 || echo -e "${YELLOW}No updates to apply${NC}"
     else
         echo -e "${GREEN}Creating stack ${STACK_NAME}...${NC}"
@@ -41,6 +42,7 @@ deploy_stack() {
             --stack-name "$STACK_NAME" \
             --template-body file://"$TEMPLATE_FILE" \
             --parameters file://"$PARAMS_FILE" \
+            --capabilities CAPABILITY_NAMED_IAM \
             --region "$REGION"
     fi
 }

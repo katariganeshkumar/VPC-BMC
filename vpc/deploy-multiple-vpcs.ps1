@@ -43,6 +43,7 @@ function Deploy-Stack {
                 --stack-name $StackName `
                 --template-body file://$TemplateFile `
                 --parameters file://$ParamsFile `
+                --capabilities CAPABILITY_NAMED_IAM `
                 --region $Region 2>&1 | Out-Null
         } catch {
             Write-Host "No updates to apply for $StackName" -ForegroundColor Yellow
@@ -53,6 +54,7 @@ function Deploy-Stack {
             --stack-name $StackName `
             --template-body file://$TemplateFile `
             --parameters file://$ParamsFile `
+            --capabilities CAPABILITY_NAMED_IAM `
             --region $Region
     }
 }

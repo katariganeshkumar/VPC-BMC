@@ -30,6 +30,7 @@ aws cloudformation create-stack \
   --stack-name vpc-1 \
   --template-body file://vpc-template.yaml \
   --parameters file://parameters-vpc1.json \
+  --capabilities CAPABILITY_NAMED_IAM \
   --region us-east-1
 ```
 
@@ -49,6 +50,7 @@ aws cloudformation create-stack \
   --stack-name vpc-1 \
   --template-body file://vpc-template.yaml \
   --parameters file://parameters-vpc1.json \
+  --capabilities CAPABILITY_NAMED_IAM \
   --region us-east-1
 
 # Deploy VPC 2 (Staging)
@@ -56,6 +58,7 @@ aws cloudformation create-stack \
   --stack-name vpc-2 \
   --template-body file://vpc-template.yaml \
   --parameters file://parameters-vpc2.json \
+  --capabilities CAPABILITY_NAMED_IAM \
   --region us-east-1
 
 # Deploy VPC 3 (Production)
@@ -63,6 +66,7 @@ aws cloudformation create-stack \
   --stack-name vpc-3 \
   --template-body file://vpc-template.yaml \
   --parameters file://parameters-vpc3.json \
+  --capabilities CAPABILITY_NAMED_IAM \
   --region us-east-1
 ```
 
@@ -73,6 +77,7 @@ aws cloudformation update-stack \
   --stack-name vpc-1 \
   --template-body file://vpc-template.yaml \
   --parameters file://parameters-vpc1.json \
+  --capabilities CAPABILITY_NAMED_IAM \
   --region us-east-1
 ```
 

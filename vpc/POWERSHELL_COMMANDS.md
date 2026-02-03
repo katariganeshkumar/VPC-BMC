@@ -29,12 +29,12 @@ aws cloudformation create-stack `
 
 ### Create Stack
 ```powershell
-aws cloudformation create-stack --stack-name vpc-1 --template-body file://vpc-template.yaml --parameters file://parameters-vpc1.json --region us-east-1
+aws cloudformation create-stack --stack-name vpc-1 --template-body file://vpc-template.yaml --parameters file://parameters-vpc1.json --capabilities CAPABILITY_NAMED_IAM --region us-east-1
 ```
 
 ### Update Stack
 ```powershell
-aws cloudformation update-stack --stack-name vpc-1 --template-body file://vpc-template.yaml --parameters file://parameters-vpc1.json --region us-east-1
+aws cloudformation update-stack --stack-name vpc-1 --template-body file://vpc-template.yaml --parameters file://parameters-vpc1.json --capabilities CAPABILITY_NAMED_IAM --region us-east-1
 ```
 
 ### Describe Stack
@@ -107,17 +107,17 @@ ls *.json
 
 ### Development
 ```powershell
-aws cloudformation create-stack --stack-name vpc-dev --template-body file://vpc-template.yaml --parameters file://parameters-vpc1.json --region us-east-1
+aws cloudformation create-stack --stack-name vpc-dev --template-body file://vpc-template.yaml --parameters file://parameters-vpc1.json --capabilities CAPABILITY_NAMED_IAM --region us-east-1
 ```
 
 ### QA/Staging
 ```powershell
-aws cloudformation create-stack --stack-name vpc-qa --template-body file://vpc-template.yaml --parameters file://parameters-vpc2.json --region us-east-1
+aws cloudformation create-stack --stack-name vpc-qa --template-body file://vpc-template.yaml --parameters file://parameters-vpc2.json --capabilities CAPABILITY_NAMED_IAM --region us-east-1
 ```
 
 ### Production
 ```powershell
-aws cloudformation create-stack --stack-name vpc-prod --template-body file://vpc-template.yaml --parameters file://parameters-vpc3.json --region us-east-1
+aws cloudformation create-stack --stack-name vpc-prod --template-body file://vpc-template.yaml --parameters file://parameters-vpc3.json --capabilities CAPABILITY_NAMED_IAM --region us-east-1
 ```
 
 ## Tips
@@ -139,7 +139,7 @@ ls vpc-template.yaml
 ls parameters-vpc1.json
 
 # 3. Deploy stack
-aws cloudformation create-stack --stack-name vpc-1 --template-body file://vpc-template.yaml --parameters file://parameters-vpc1.json --region us-east-1
+aws cloudformation create-stack --stack-name vpc-1 --template-body file://vpc-template.yaml --parameters file://parameters-vpc1.json --capabilities CAPABILITY_NAMED_IAM --region us-east-1
 
 # 4. Wait for completion (optional)
 aws cloudformation wait stack-create-complete --stack-name vpc-1 --region us-east-1

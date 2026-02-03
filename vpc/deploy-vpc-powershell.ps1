@@ -34,6 +34,7 @@ try {
         --stack-name $StackName `
         --template-body file://vpc-template.yaml `
         --parameters file://$ParametersFile `
+        --capabilities CAPABILITY_NAMED_IAM `
         --region $Region
     
     Write-Host "`nStack creation initiated successfully!" -ForegroundColor Green
