@@ -15,13 +15,13 @@ Parameters:
   
   # Availability Zones
   AvailabilityZone1:
-    Type: AWS::EC2::AvailabilityZone::Name
-    Description: First Availability Zone for subnets
+    Type: String
+    Description: First Availability Zone for subnets (e.g., us-east-1a)
     Default: us-east-1a
   
   AvailabilityZone2:
-    Type: AWS::EC2::AvailabilityZone::Name
-    Description: Second Availability Zone for private subnets
+    Type: String
+    Description: Second Availability Zone for private subnets (e.g., us-east-1b)
     Default: us-east-1b
   
   # Public Subnet Configuration
@@ -41,10 +41,10 @@ Parameters:
     Description: CIDR block for the second private subnet (e.g., 10.0.3.0/24)
     Default: 10.0.3.0/24
   
-  # EC2 Key Pair (temporary for testing)
+  # EC2 Key Pair (optional - leave empty to deploy without a key pair; use an existing key name if you launch EC2 instances)
   KeyPairName:
-    Type: AWS::EC2::KeyPair::KeyName
-    Description: EC2 Key Pair name for immediate testing (will transition to SSM)
+    Type: String
+    Description: EC2 Key Pair name for testing (optional). Leave empty if not used. Must exist in this region if provided.
     Default: ''
   
   # Environment Tag
@@ -308,11 +308,6 @@ Resources:
       InstanceProfileName: !Sub '${VpcName}-SSM-InstanceProfile'
       Roles:
         - !Ref SSMSessionManagerRole
-      Tags:
-        - Key: Name
-          Value: !Sub '${VpcName}-SSM-InstanceProfile'
-        - Key: Environment
-          Value: !Ref Environment
 
 Outputs:
   VpcId:

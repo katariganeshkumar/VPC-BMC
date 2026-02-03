@@ -22,7 +22,7 @@ aws cloudformation create-stack `
 
 ### Option 3: Using PowerShell Script
 ```powershell
-.\deploy-vpc-powershell.ps1 -StackName vpc-1 -Region us-east-1
+.\deploy-multiple-vpcs.ps1 us-east-1
 ```
 
 ## Common Commands
@@ -64,15 +64,15 @@ aws cloudformation describe-stacks --stack-name vpc-1 --query 'Stacks[0].Outputs
 
 ## PowerShell Script Usage
 
-### Deploy VPC Stack
+### Deploy Multiple VPCs
 ```powershell
 cd vpc
-.\deploy-vpc-powershell.ps1 -StackName vpc-1 -Region us-east-1
+.\deploy-multiple-vpcs.ps1 us-east-1
 ```
 
-### Deploy with Custom Parameters
+### Deploy with Custom Region
 ```powershell
-.\deploy-vpc-powershell.ps1 -StackName vpc-dev -ParametersFile parameters-vpc1.json -Region us-east-1
+.\deploy-multiple-vpcs.ps1 us-west-2
 ```
 
 ## Troubleshooting

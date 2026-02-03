@@ -16,10 +16,10 @@ Write-Host "Deploying Multiple VPCs to $Region" -ForegroundColor Green
 # Function to check if stack exists
 function Test-StackExists {
     param([string]$StackName)
-    try {
-        aws cloudformation describe-stacks --stack-name $StackName --region $Region 2>&1 | Out-Null
+    $result = aws cloudformation describe-stacks --stack-name $StackName --region $Region 2>&1
+    if ($LASTEXITCODE -eq 0) {
         return $true
-    } catch {
+    } else {
         return $false
     }
 }

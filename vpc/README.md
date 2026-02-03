@@ -8,7 +8,8 @@ This folder contains CloudFormation templates for creating VPC infrastructure in
 - **parameters-vpc1.json** - Parameters for VPC 1 (Development environment)
 - **parameters-vpc2.json** - Parameters for VPC 2 (Staging environment)
 - **parameters-vpc3.json** - Parameters for VPC 3 (Production environment)
-- **deploy-multiple-vpcs.sh** - Script to deploy multiple VPCs
+- **deploy-multiple-vpcs.sh** - Bash script to deploy multiple VPCs
+- **deploy-multiple-vpcs.ps1** - PowerShell script to deploy multiple VPCs
 
 ## Architecture
 
@@ -38,8 +39,14 @@ aws cloudformation create-stack \
 
 Use the deployment script:
 
+**Bash:**
 ```bash
 ./deploy-multiple-vpcs.sh us-east-1
+```
+
+**PowerShell:**
+```powershell
+.\deploy-multiple-vpcs.ps1 us-east-1
 ```
 
 Or deploy individually:
@@ -108,11 +115,16 @@ aws cloudformation delete-stack \
 The template exports the following values (all dynamic, not hard-coded):
 
 - `VpcId` - The dynamically created VPC ID
+- `VpcCidr` - VPC CIDR Block
 - `InternetGatewayId` - IGW ID
 - `PublicSubnetId` - Public subnet ID
+- `PublicSubnetCidr` - Public subnet CIDR Block
 - `PrivateSubnet1Id` - First private subnet ID
+- `PrivateSubnet1Cidr` - First private subnet CIDR Block
 - `PrivateSubnet2Id` - Second private subnet ID
+- `PrivateSubnet2Cidr` - Second private subnet CIDR Block
 - `NatGatewayId` - NAT Gateway ID
+- `NatGatewayEIP` - NAT Gateway Elastic IP Address
 - `PublicRouteTableId` - Public route table ID
 - `PrivateRouteTableId` - Private route table ID
 - `PublicSecurityGroupId` - Public security group ID

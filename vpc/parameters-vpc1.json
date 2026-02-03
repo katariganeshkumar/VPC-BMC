@@ -29,7 +29,7 @@
   },
   {
     "ParameterKey": "KeyPairName",
-    "ParameterValue": "my-key-pair"
+    "ParameterValue": ""
   },
   {
     "ParameterKey": "Environment",
