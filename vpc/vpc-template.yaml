@@ -281,34 +281,6 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
   
-  # IAM Role for SSM Session Manager
-  SSMSessionManagerRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub '${VpcName}-SSM-SessionManager-Role'
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ec2.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-      Tags:
-        - Key: Name
-          Value: !Sub '${VpcName}-SSM-Role'
-        - Key: Environment
-          Value: !Ref Environment
-  
-  # Instance Profile for SSM Session Manager
-  SSMInstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      InstanceProfileName: !Sub '${VpcName}-SSM-InstanceProfile'
-      Roles:
-        - !Ref SSMSessionManagerRole
-
 Outputs:
   VpcId:
     Description: VPC ID (dynamic, not hard-coded)
@@ -399,9 +371,3 @@ Outputs:
     Value: !Ref PrivateSecurityGroup
     Export:
       Name: !Sub '${AWS::StackName}-Private-SG-ID'
-  
-  SSMInstanceProfileArn:
-    Description: SSM Session Manager Instance Profile ARN
-    Value: !GetAtt SSMInstanceProfile.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}-SSM-InstanceProfile-ARN'

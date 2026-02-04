@@ -55,19 +55,5 @@ else
     exit 1
 fi
 
-# Deploy VPC 2
-if [ -f "parameters-vpc2.json" ]; then
-    deploy_stack "vpc-2" "parameters-vpc2.json"
-else
-    echo -e "${YELLOW}Warning: parameters-vpc2.json not found. Skipping VPC 2${NC}"
-fi
-
-# Deploy VPC 3
-if [ -f "parameters-vpc3.json" ]; then
-    deploy_stack "vpc-3" "parameters-vpc3.json"
-else
-    echo -e "${YELLOW}Warning: parameters-vpc3.json not found. Skipping VPC 3${NC}"
-fi
-
 echo -e "${GREEN}Deployment initiated. Check stack status with:${NC}"
 echo "aws cloudformation describe-stacks --region $REGION"
