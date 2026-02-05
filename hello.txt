@@ -21,3 +21,10 @@ aws cloudformation create-stack \
   aws cloudformation wait stack-delete-complete \
   --stack-name ec2-alb-dev \
   --region us-west-2
+
+  ganesh@Ganeshs-Mac-mini compute % aws cloudformation describe-stacks \
+  --stack-name ec2-alb-dev \
+  --query 'Stacks[0].Outputs[?OutputKey==`ALBDNSName`].OutputValue' \
+  --output text \
+  --region us-west-2
+BMCapp-ALB-dev-1466108246.us-west-2.elb.amazonaws.com
