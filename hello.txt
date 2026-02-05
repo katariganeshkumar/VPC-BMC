@@ -1,0 +1,23 @@
+cd compute
+aws cloudformation create-stack \
+  --stack-name ec2-alb-dev \
+  --template-body file://ec2-alb-template.yaml \
+  --parameters file://parameters-ec2-alb-dev.json \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region us-west-2
+
+  # Delete the failed stack first
+
+aws cloudformation delete-stack --stack-name ec2-alb-dev --region us-west-2
+
+# Wait for deletion to complete, then create again
+aws cloudformation create-stack \
+  --stack-name ec2-alb-dev \
+  --template-body file://ec2-alb-template.yaml \
+  --parameters file://parameters-ec2-alb-dev.json \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region us-west-2
+
+  aws cloudformation wait stack-delete-complete \
+  --stack-name ec2-alb-dev \
+  --region us-west-2
