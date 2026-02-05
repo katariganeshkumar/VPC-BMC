@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "VpcName",
-    "ParameterValue": "VPC-1"
+    "ParameterValue": "BMC-VPC-1"
   },
   {
     "ParameterKey": "VpcCidr",
@@ -9,11 +9,11 @@
   },
   {
     "ParameterKey": "AvailabilityZone1",
-    "ParameterValue": "us-east-1a"
+    "ParameterValue": "us-west-2a"
   },
   {
     "ParameterKey": "AvailabilityZone2",
-    "ParameterValue": "us-east-1b"
+    "ParameterValue": "us-west-2b"
   },
   {
     "ParameterKey": "PublicSubnetCidr",
