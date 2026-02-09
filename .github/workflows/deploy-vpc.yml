@@ -1,0 +1,231 @@
+name: Deploy VPC Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      stack_name:
+        description: 'CloudFormation Stack Name'
+        required: true
+        default: 'vpc-1'
+        type: choice
+        options:
+          - vpc-1
+          - vpc-2
+          - vpc-3
+      environment:
+        description: 'Environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      aws_region:
+        description: 'AWS Region'
+        required: true
+        default: 'us-east-1'
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+          - deploy
+          - update
+          - delete
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'vpc/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'vpc/**'
+
+env:
+  AWS_REGION: ${{ github.event.inputs.aws_region || 'us-east-1' }}
+  STACK_NAME: ${{ github.event.inputs.stack_name || 'vpc-1' }}
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+  ACTION: ${{ github.event.inputs.action || 'deploy' }}
+  S3_BUCKET: ${{ secrets.CLOUDFORMATION_S3_BUCKET }}
+
+jobs:
+  validate-templates:
+    name: Validate CloudFormation Templates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate main template
+        run: |
+          aws cloudformation validate-template \
+            --template-body file://vpc/main.yaml \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Validate module templates
+        run: |
+          for template in vpc/templates/*.yaml; do
+            echo "Validating $template"
+            aws cloudformation validate-template \
+              --template-body file://$template \
+              --region ${{ env.AWS_REGION }}
+          done
+
+  deploy:
+    name: Deploy VPC Stack
+    runs-on: ubuntu-latest
+    needs: validate-templates
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Determine parameters file
+        id: params
+        run: |
+          case "${{ env.STACK_NAME }}" in
+            vpc-1)
+              echo "params_file=environment/parameters-vpc1.json" >> $GITHUB_OUTPUT
+              ;;
+            vpc-2)
+              echo "params_file=environment/parameters-vpc2.json" >> $GITHUB_OUTPUT
+              ;;
+            vpc-3)
+              echo "params_file=environment/parameters-vpc3.json" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "params_file=environment/parameters-vpc1.json" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Check S3 bucket exists
+        run: |
+          if ! aws s3 ls "s3://${{ env.S3_BUCKET }}" 2>/dev/null; then
+            echo "Creating S3 bucket: ${{ env.S3_BUCKET }}"
+            aws s3 mb "s3://${{ env.S3_BUCKET }}" --region ${{ env.AWS_REGION }}
+          else
+            echo "S3 bucket exists: ${{ env.S3_BUCKET }}"
+          fi
+
+      - name: Upload templates to S3
+        run: |
+          echo "Uploading templates to S3..."
+          aws s3 cp vpc/main.yaml "s3://${{ env.S3_BUCKET }}/vpc/main.yaml" --region ${{ env.AWS_REGION }}
+          aws s3 cp vpc/templates/vpc.yaml "s3://${{ env.S3_BUCKET }}/vpc/templates/vpc.yaml" --region ${{ env.AWS_REGION }}
+          aws s3 cp vpc/templates/subnets.yaml "s3://${{ env.S3_BUCKET }}/vpc/templates/subnets.yaml" --region ${{ env.AWS_REGION }}
+          aws s3 cp vpc/templates/nat-gateway.yaml "s3://${{ env.S3_BUCKET }}/vpc/templates/nat-gateway.yaml" --region ${{ env.AWS_REGION }}
+          aws s3 cp vpc/templates/route-tables.yaml "s3://${{ env.S3_BUCKET }}/vpc/templates/route-tables.yaml" --region ${{ env.AWS_REGION }}
+          aws s3 cp vpc/templates/security-groups.yaml "s3://${{ env.S3_BUCKET }}/vpc/templates/security-groups.yaml" --region ${{ env.AWS_REGION }}
+          echo "✓ Templates uploaded successfully"
+
+      - name: Prepare parameters with S3 bucket
+        run: |
+          PARAMS_FILE="vpc/${{ steps.params.outputs.params_file }}"
+          TEMP_PARAMS=$(mktemp)
+          
+          # Copy original parameters
+          cat "$PARAMS_FILE" > "$TEMP_PARAMS"
+          
+          # Add TemplateS3Bucket if not present
+          if ! grep -q "TemplateS3Bucket" "$TEMP_PARAMS"; then
+            # Remove last closing bracket
+            head -n -1 "$TEMP_PARAMS" > "${TEMP_PARAMS}.tmp"
+            # Add TemplateS3Bucket parameter
+            echo '  {' >> "${TEMP_PARAMS}.tmp"
+            echo '    "ParameterKey": "TemplateS3Bucket",' >> "${TEMP_PARAMS}.tmp"
+            echo '    "ParameterValue": "'"${{ env.S3_BUCKET }}"'"' >> "${TEMP_PARAMS}.tmp"
+            echo '  }' >> "${TEMP_PARAMS}.tmp"
+            echo ']' >> "${TEMP_PARAMS}.tmp"
+            mv "${TEMP_PARAMS}.tmp" "$TEMP_PARAMS"
+          fi
+          
+          echo "PARAMS_FILE=$TEMP_PARAMS" >> $GITHUB_ENV
+
+      - name: Check if stack exists
+        id: stack-check
+        run: |
+          if aws cloudformation describe-stacks --stack-name "${{ env.STACK_NAME }}" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy CloudFormation Stack
+        if: env.ACTION == 'deploy' || env.ACTION == 'update'
+        run: |
+          TEMPLATE_URL="https://${{ env.S3_BUCKET }}.s3.${{ env.AWS_REGION }}.amazonaws.com/vpc/main.yaml"
+          
+          if [ "${{ steps.stack-check.outputs.exists }}" == "true" ]; then
+            echo "Updating existing stack: ${{ env.STACK_NAME }}"
+            aws cloudformation update-stack \
+              --stack-name "${{ env.STACK_NAME }}" \
+              --template-url "$TEMPLATE_URL" \
+              --parameters file://${{ env.PARAMS_FILE }} \
+              --capabilities CAPABILITY_NAMED_IAM \
+              --region ${{ env.AWS_REGION }} || echo "No updates to apply"
+            
+            echo "Waiting for stack update to complete..."
+            aws cloudformation wait stack-update-complete \
+              --stack-name "${{ env.STACK_NAME }}" \
+              --region ${{ env.AWS_REGION }}
+          else
+            echo "Creating new stack: ${{ env.STACK_NAME }}"
+            aws cloudformation create-stack \
+              --stack-name "${{ env.STACK_NAME }}" \
+              --template-url "$TEMPLATE_URL" \
+              --parameters file://${{ env.PARAMS_FILE }} \
+              --capabilities CAPABILITY_NAMED_IAM \
+              --region ${{ env.AWS_REGION }}
+            
+            echo "Waiting for stack creation to complete..."
+            aws cloudformation wait stack-create-complete \
+              --stack-name "${{ env.STACK_NAME }}" \
+              --region ${{ env.AWS_REGION }}
+          fi
+
+      - name: Delete CloudFormation Stack
+        if: env.ACTION == 'delete'
+        run: |
+          echo "Deleting stack: ${{ env.STACK_NAME }}"
+          aws cloudformation delete-stack \
+            --stack-name "${{ env.STACK_NAME }}" \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "Waiting for stack deletion to complete..."
+          aws cloudformation wait stack-delete-complete \
+            --stack-name "${{ env.STACK_NAME }}" \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Get stack outputs
+        if: env.ACTION == 'deploy' || env.ACTION == 'update'
+        run: |
+          echo "Stack Outputs:"
+          aws cloudformation describe-stacks \
+            --stack-name "${{ env.STACK_NAME }}" \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs' \
+            --output table
+
+      - name: Cleanup temp files
+        if: always()
+        run: |
+          rm -f ${{ env.PARAMS_FILE }}
