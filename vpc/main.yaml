@@ -1,0 +1,232 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Main VPC Template - Orchestrates all VPC modules using Nested Stacks'
+
+Parameters:
+  # VPC Configuration
+  VpcCidr:
+    Type: String
+    Description: CIDR block for the VPC (e.g., 10.0.0.0/16)
+    Default: 10.0.0.0/16
+  
+  VpcName:
+    Type: String
+    Description: Name tag for the VPC
+    Default: MultiVPC-Instance
+  
+  # Availability Zones
+  AvailabilityZone1:
+    Type: String
+    Description: First Availability Zone for subnets (e.g., us-east-1a)
+    Default: us-east-1a
+  
+  AvailabilityZone2:
+    Type: String
+    Description: Second Availability Zone for private subnets (e.g., us-east-1b)
+    Default: us-east-1b
+  
+  # Public Subnet Configuration
+  PublicSubnetCidr:
+    Type: String
+    Description: CIDR block for the public subnet (e.g., 10.0.1.0/24)
+    Default: 10.0.1.0/24
+  
+  # Private Subnet Configuration
+  PrivateSubnet1Cidr:
+    Type: String
+    Description: CIDR block for the first private subnet (e.g., 10.0.2.0/24)
+    Default: 10.0.2.0/24
+  
+  PrivateSubnet2Cidr:
+    Type: String
+    Description: CIDR block for the second private subnet (e.g., 10.0.3.0/24)
+    Default: 10.0.3.0/24
+  
+  # EC2 Key Pair (optional - leave empty to deploy without a key pair)
+  KeyPairName:
+    Type: String
+    Description: EC2 Key Pair name for testing (optional). Leave empty if not used. Must exist in this region if provided.
+    Default: ''
+  
+  # Environment Tag
+  Environment:
+    Type: String
+    Description: Environment name (e.g., dev, staging, prod)
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+  
+  # S3 Template Location (required for nested stacks)
+  TemplateS3Bucket:
+    Type: String
+    Description: S3 bucket name where CloudFormation templates are stored (e.g., my-cf-templates-bucket)
+  
+  TemplateS3Prefix:
+    Type: String
+    Description: S3 prefix/path for templates (e.g., vpc or vpc/templates)
+    Default: vpc
+
+Resources:
+  # Nested Stack: VPC Module
+  VPCStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplateS3Bucket}.s3.amazonaws.com/${TemplateS3Prefix}/templates/vpc.yaml'
+      Parameters:
+        VpcCidr: !Ref VpcCidr
+        VpcName: !Ref VpcName
+        Environment: !Ref Environment
+  
+  # Nested Stack: Subnets Module
+  SubnetsStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: VPCStack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplateS3Bucket}.s3.amazonaws.com/${TemplateS3Prefix}/templates/subnets.yaml'
+      Parameters:
+        VpcId: !GetAtt VPCStack.Outputs.VpcId
+        VpcName: !Ref VpcName
+        AvailabilityZone1: !Ref AvailabilityZone1
+        AvailabilityZone2: !Ref AvailabilityZone2
+        PublicSubnetCidr: !Ref PublicSubnetCidr
+        PrivateSubnet1Cidr: !Ref PrivateSubnet1Cidr
+        PrivateSubnet2Cidr: !Ref PrivateSubnet2Cidr
+        Environment: !Ref Environment
+  
+  # Nested Stack: NAT Gateway Module
+  NatGatewayStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: 
+      - VPCStack
+      - SubnetsStack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplateS3Bucket}.s3.amazonaws.com/${TemplateS3Prefix}/templates/nat-gateway.yaml'
+      Parameters:
+        VpcName: !Ref VpcName
+        PublicSubnetId: !GetAtt SubnetsStack.Outputs.PublicSubnetId
+        InternetGatewayAttachment: !Ref VPCStack
+        Environment: !Ref Environment
+  
+  # Nested Stack: Route Tables Module
+  RouteTablesStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - VPCStack
+      - SubnetsStack
+      - NatGatewayStack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplateS3Bucket}.s3.amazonaws.com/${TemplateS3Prefix}/templates/route-tables.yaml'
+      Parameters:
+        VpcId: !GetAtt VPCStack.Outputs.VpcId
+        VpcName: !Ref VpcName
+        InternetGatewayId: !GetAtt VPCStack.Outputs.InternetGatewayId
+        PublicSubnetId: !GetAtt SubnetsStack.Outputs.PublicSubnetId
+        PrivateSubnet1Id: !GetAtt SubnetsStack.Outputs.PrivateSubnet1Id
+        PrivateSubnet2Id: !GetAtt SubnetsStack.Outputs.PrivateSubnet2Id
+        NatGatewayId: !GetAtt NatGatewayStack.Outputs.NatGatewayId
+        InternetGatewayAttachment: !Ref VPCStack
+        Environment: !Ref Environment
+  
+  # Nested Stack: Security Groups Module
+  SecurityGroupsStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: VPCStack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplateS3Bucket}.s3.amazonaws.com/${TemplateS3Prefix}/templates/security-groups.yaml'
+      Parameters:
+        VpcId: !GetAtt VPCStack.Outputs.VpcId
+        VpcName: !Ref VpcName
+        KeyPairName: !Ref KeyPairName
+        Environment: !Ref Environment
+
+Outputs:
+  VpcId:
+    Description: VPC ID
+    Value: !GetAtt VPCStack.Outputs.VpcId
+    Export:
+      Name: !Sub '${AWS::StackName}-VPC-ID'
+  
+  VpcCidr:
+    Description: VPC CIDR Block
+    Value: !GetAtt VPCStack.Outputs.VpcCidr
+    Export:
+      Name: !Sub '${AWS::StackName}-VPC-CIDR'
+  
+  InternetGatewayId:
+    Description: Internet Gateway ID
+    Value: !GetAtt VPCStack.Outputs.InternetGatewayId
+    Export:
+      Name: !Sub '${AWS::StackName}-IGW-ID'
+  
+  PublicSubnetId:
+    Description: Public Subnet ID
+    Value: !GetAtt SubnetsStack.Outputs.PublicSubnetId
+    Export:
+      Name: !Sub '${AWS::StackName}-Public-Subnet-ID'
+  
+  PublicSubnetCidr:
+    Description: Public Subnet CIDR Block
+    Value: !GetAtt SubnetsStack.Outputs.PublicSubnetCidr
+    Export:
+      Name: !Sub '${AWS::StackName}-Public-Subnet-CIDR'
+  
+  PrivateSubnet1Id:
+    Description: Private Subnet 1 ID
+    Value: !GetAtt SubnetsStack.Outputs.PrivateSubnet1Id
+    Export:
+      Name: !Sub '${AWS::StackName}-Private-Subnet-1-ID'
+  
+  PrivateSubnet1Cidr:
+    Description: Private Subnet 1 CIDR Block
+    Value: !GetAtt SubnetsStack.Outputs.PrivateSubnet1Cidr
+    Export:
+      Name: !Sub '${AWS::StackName}-Private-Subnet-1-CIDR'
+  
+  PrivateSubnet2Id:
+    Description: Private Subnet 2 ID
+    Value: !GetAtt SubnetsStack.Outputs.PrivateSubnet2Id
+    Export:
+      Name: !Sub '${AWS::StackName}-Private-Subnet-2-ID'
+  
+  PrivateSubnet2Cidr:
+    Description: Private Subnet 2 CIDR Block
+    Value: !GetAtt SubnetsStack.Outputs.PrivateSubnet2Cidr
+    Export:
+      Name: !Sub '${AWS::StackName}-Private-Subnet-2-CIDR'
+  
+  NatGatewayId:
+    Description: NAT Gateway ID
+    Value: !GetAtt NatGatewayStack.Outputs.NatGatewayId
+    Export:
+      Name: !Sub '${AWS::StackName}-NAT-Gateway-ID'
+  
+  NatGatewayEIP:
+    Description: NAT Gateway Elastic IP Address
+    Value: !GetAtt NatGatewayStack.Outputs.NatGatewayEIP
+    Export:
+      Name: !Sub '${AWS::StackName}-NAT-EIP'
+  
+  PublicRouteTableId:
+    Description: Public Route Table ID
+    Value: !GetAtt RouteTablesStack.Outputs.PublicRouteTableId
+    Export:
+      Name: !Sub '${AWS::StackName}-Public-RouteTable-ID'
+  
+  PrivateRouteTableId:
+    Description: Private Route Table ID
+    Value: !GetAtt RouteTablesStack.Outputs.PrivateRouteTableId
+    Export:
+      Name: !Sub '${AWS::StackName}-Private-RouteTable-ID'
+  
+  PublicSecurityGroupId:
+    Description: Public Subnet Security Group ID
+    Value: !GetAtt SecurityGroupsStack.Outputs.PublicSecurityGroupId
+    Export:
+      Name: !Sub '${AWS::StackName}-Public-SG-ID'
+  
+  PrivateSecurityGroupId:
+    Description: Private Subnet Security Group ID
+    Value: !GetAtt SecurityGroupsStack.Outputs.PrivateSecurityGroupId
+    Export:
+      Name: !Sub '${AWS::StackName}-Private-SG-ID'

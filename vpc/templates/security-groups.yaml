@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Security Groups Module - Creates Security Groups for Public and Private Subnets'
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: VPC ID
+  
+  VpcName:
+    Type: String
+    Description: Name tag for the VPC
+  
+  KeyPairName:
+    Type: String
+    Description: EC2 Key Pair name for testing (optional). Leave empty if not used.
+    Default: ''
+  
+  Environment:
+    Type: String
+    Description: Environment name (e.g., dev, staging, prod)
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+Resources:
+  # Security Group for Public Subnet (SSH access)
+  PublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${VpcName}-Public-SG'
+      GroupDescription: Security group for public subnet instances
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: SSH access from anywhere (temporary for testing)
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP access
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS access
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Name
+          Value: !Sub '${VpcName}-Public-SG'
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # Security Group for Private Subnets
+  PrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${VpcName}-Private-SG'
+      GroupDescription: Security group for private subnet instances
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref PublicSecurityGroup
+          Description: SSH access from public subnet only
+        - IpProtocol: -1
+          SourceSecurityGroupId: !Ref PublicSecurityGroup
+          Description: All traffic from public subnet
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Name
+          Value: !Sub '${VpcName}-Private-SG'
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  PublicSecurityGroupId:
+    Description: Public Subnet Security Group ID
+    Value: !Ref PublicSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-Public-SG-ID'
+  
+  PrivateSecurityGroupId:
+    Description: Private Subnet Security Group ID
+    Value: !Ref PrivateSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-Private-SG-ID'

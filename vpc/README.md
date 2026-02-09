@@ -1,15 +1,35 @@
 # VPC Infrastructure Templates
 
-This folder contains CloudFormation templates for creating VPC infrastructure in AWS.
+This folder contains modular CloudFormation templates for creating VPC infrastructure in AWS.
 
-## Files
+## Project Structure
 
-- **vpc-template.yaml** - Main CloudFormation template for VPC creation
-- **parameters-vpc1.json** - Parameters for VPC 1 (Development environment)
-- **parameters-vpc2.json** - Parameters for VPC 2 (Staging environment)
-- **parameters-vpc3.json** - Parameters for VPC 3 (Production environment)
-- **deploy-multiple-vpcs.sh** - Bash script to deploy multiple VPCs
-- **deploy-multiple-vpcs.ps1** - PowerShell script to deploy multiple VPCs
+```
+vpc/
+├── main.yaml                    # Main template that orchestrates all modules
+├── templates/                   # Modular template files
+│   ├── vpc.yaml                # VPC, Internet Gateway module
+│   ├── subnets.yaml            # Public and Private Subnets module
+│   ├── nat-gateway.yaml        # NAT Gateway and Elastic IP module
+│   ├── route-tables.yaml       # Route Tables and Associations module
+│   └── security-groups.yaml    # Security Groups module
+├── environment/                 # Environment-specific parameter files
+│   ├── parameters-vpc1.json    # Parameters for VPC 1 (Development)
+│   ├── parameters-vpc2.json    # Parameters for VPC 2 (Staging)
+│   └── parameters-vpc3.json    # Parameters for VPC 3 (Production)
+└── deploy-multiple-vpcs.sh     # Deployment script
+```
+
+## Architecture
+
+The templates are organized into modular components:
+
+- **main.yaml** - Main orchestration template using nested stacks
+- **templates/vpc.yaml** - Creates VPC and Internet Gateway
+- **templates/subnets.yaml** - Creates public and private subnets
+- **templates/nat-gateway.yaml** - Creates NAT Gateway with Elastic IP
+- **templates/route-tables.yaml** - Creates route tables and associations
+- **templates/security-groups.yaml** - Creates security groups for public and private subnets
 
 ## Architecture
 
@@ -24,69 +44,125 @@ Each VPC includes:
 
 ## Deployment
 
-### Single VPC Deployment
+### Prerequisites
+
+**Important:** Nested stacks require templates to be uploaded to an S3 bucket. 
+
+**Option 1: Use the deployment script (Recommended)**
+
+The `deploy-modular.sh` script automatically uploads templates to S3 and deploys the stack:
 
 ```bash
+./deploy-modular.sh <S3_BUCKET> <STACK_NAME> <PARAMETERS_FILE> [REGION]
+
+# Example:
+./deploy-modular.sh my-cf-templates vpc-1 environment/parameters-vpc1.json us-east-1
+```
+
+**Option 2: Manual upload and deployment**
+
+Before deploying, upload all templates to S3:
+
+```bash
+# Set your S3 bucket name
+S3_BUCKET="your-cloudformation-templates-bucket"
+REGION="us-east-1"
+
+# Upload all templates to S3
+aws s3 cp main.yaml s3://${S3_BUCKET}/vpc/main.yaml --region ${REGION}
+aws s3 cp templates/vpc.yaml s3://${S3_BUCKET}/vpc/templates/vpc.yaml --region ${REGION}
+aws s3 cp templates/subnets.yaml s3://${S3_BUCKET}/vpc/templates/subnets.yaml --region ${REGION}
+aws s3 cp templates/nat-gateway.yaml s3://${S3_BUCKET}/vpc/templates/nat-gateway.yaml --region ${REGION}
+aws s3 cp templates/route-tables.yaml s3://${S3_BUCKET}/vpc/templates/route-tables.yaml --region ${REGION}
+aws s3 cp templates/security-groups.yaml s3://${S3_BUCKET}/vpc/templates/security-groups.yaml --region ${REGION}
+```
+
+Or upload the entire directory:
+
+```bash
+aws s3 sync . s3://${S3_BUCKET}/vpc/ --exclude "*.sh" --exclude "*.ps1" --exclude "README.md" --region ${REGION}
+```
+
+### Single VPC Deployment (Modular Structure)
+
+**Using deployment script:**
+```bash
+./deploy-modular.sh my-cf-templates vpc-1 environment/parameters-vpc1.json us-east-1
+```
+
+**Manual deployment:**
+```bash
+S3_BUCKET="your-cloudformation-templates-bucket"
+REGION="us-east-1"
+
+# Note: You need to add TemplateS3Bucket parameter to your parameters file
+# or pass it via --parameters flag
+
 aws cloudformation create-stack \
   --stack-name vpc-1 \
-  --template-body file://vpc-template.yaml \
-  --parameters file://parameters-vpc1.json \
+  --template-url https://${S3_BUCKET}.s3.${REGION}.amazonaws.com/vpc/main.yaml \
+  --parameters file://environment/parameters-vpc1.json \
+  --parameters ParameterKey=TemplateS3Bucket,ParameterValue=${S3_BUCKET} \
   --capabilities CAPABILITY_NAMED_IAM \
-  --region us-east-1
+  --region ${REGION}
 ```
+
 
 ### Multiple VPC Deployment
 
-Use the deployment script:
-
-**Bash:**
-```bash
-./deploy-multiple-vpcs.sh us-east-1
-```
-
-**PowerShell:**
-```powershell
-.\deploy-multiple-vpcs.ps1 us-east-1
-```
-
-Or deploy individually:
+**Using Modular Templates:**
 
 ```bash
+S3_BUCKET="your-cloudformation-templates-bucket"
+REGION="us-east-1"
+
 # Deploy VPC 1 (Development)
 aws cloudformation create-stack \
   --stack-name vpc-1 \
-  --template-body file://vpc-template.yaml \
-  --parameters file://parameters-vpc1.json \
+  --template-url https://${S3_BUCKET}.s3.${REGION}.amazonaws.com/vpc/main.yaml \
+  --parameters file://environment/parameters-vpc1.json \
   --capabilities CAPABILITY_NAMED_IAM \
-  --region us-east-1
+  --region ${REGION}
 
 # Deploy VPC 2 (Staging)
 aws cloudformation create-stack \
   --stack-name vpc-2 \
-  --template-body file://vpc-template.yaml \
-  --parameters file://parameters-vpc2.json \
+  --template-url https://${S3_BUCKET}.s3.${REGION}.amazonaws.com/vpc/main.yaml \
+  --parameters file://environment/parameters-vpc2.json \
   --capabilities CAPABILITY_NAMED_IAM \
-  --region us-east-1
+  --region ${REGION}
 
 # Deploy VPC 3 (Production)
 aws cloudformation create-stack \
   --stack-name vpc-3 \
-  --template-body file://vpc-template.yaml \
-  --parameters file://parameters-vpc3.json \
+  --template-url https://${S3_BUCKET}.s3.${REGION}.amazonaws.com/vpc/main.yaml \
+  --parameters file://environment/parameters-vpc3.json \
   --capabilities CAPABILITY_NAMED_IAM \
-  --region us-east-1
+  --region ${REGION}
+```
+
+**Using deployment script:**
+
+```bash
+# Deploy all VPCs using the deployment script
+./deploy-multiple-vpcs.sh us-east-1 my-cf-templates
 ```
 
 ### Update Existing Stack
 
+**Modular Template:**
 ```bash
+S3_BUCKET="your-cloudformation-templates-bucket"
+REGION="us-east-1"
+
 aws cloudformation update-stack \
   --stack-name vpc-1 \
-  --template-body file://vpc-template.yaml \
-  --parameters file://parameters-vpc1.json \
+  --template-url https://${S3_BUCKET}.s3.${REGION}.amazonaws.com/vpc/main.yaml \
+  --parameters file://environment/parameters-vpc1.json \
   --capabilities CAPABILITY_NAMED_IAM \
-  --region us-east-1
+  --region ${REGION}
 ```
+
 
 ### Delete Stack
 

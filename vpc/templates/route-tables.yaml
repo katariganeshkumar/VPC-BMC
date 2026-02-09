@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Route Tables Module - Creates Route Tables and Associations'
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: VPC ID
+  
+  VpcName:
+    Type: String
+    Description: Name tag for the VPC
+  
+  InternetGatewayId:
+    Type: String
+    Description: Internet Gateway ID
+  
+  PublicSubnetId:
+    Type: String
+    Description: Public Subnet ID
+  
+  PrivateSubnet1Id:
+    Type: String
+    Description: Private Subnet 1 ID
+  
+  PrivateSubnet2Id:
+    Type: String
+    Description: Private Subnet 2 ID
+  
+  NatGatewayId:
+    Type: String
+    Description: NAT Gateway ID
+  
+  InternetGatewayAttachment:
+    Type: String
+    Description: Internet Gateway Attachment (dependency reference)
+  
+  Environment:
+    Type: String
+    Description: Environment name (e.g., dev, staging, prod)
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+Resources:
+  # Public Route Table
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Sub '${VpcName}-Public-RouteTable'
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # Default route for public subnet (0.0.0.0/0 -> IGW)
+  PublicDefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGatewayId
+  
+  # Associate Public Subnet with Public Route Table
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetId
+      RouteTableId: !Ref PublicRouteTable
+  
+  # Private Route Table
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Sub '${VpcName}-Private-RouteTable'
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # Default route for private subnets (0.0.0.0/0 -> NAT Gateway)
+  PrivateDefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: NatGatewayId
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGatewayId
+  
+  # Associate Private Subnet 1 with Private Route Table
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1Id
+      RouteTableId: !Ref PrivateRouteTable
+  
+  # Associate Private Subnet 2 with Private Route Table
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2Id
+      RouteTableId: !Ref PrivateRouteTable
+
+Outputs:
+  PublicRouteTableId:
+    Description: Public Route Table ID
+    Value: !Ref PublicRouteTable
+    Export:
+      Name: !Sub '${AWS::StackName}-Public-RouteTable-ID'
+  
+  PrivateRouteTableId:
+    Description: Private Route Table ID
+    Value: !Ref PrivateRouteTable
+    Export:
+      Name: !Sub '${AWS::StackName}-Private-RouteTable-ID'

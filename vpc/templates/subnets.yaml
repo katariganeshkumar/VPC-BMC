@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Subnets Module - Creates Public and Private Subnets'
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: VPC ID
+  
+  VpcName:
+    Type: String
+    Description: Name tag for the VPC
+  
+  AvailabilityZone1:
+    Type: String
+    Description: First Availability Zone for subnets (e.g., us-east-1a)
+  
+  AvailabilityZone2:
+    Type: String
+    Description: Second Availability Zone for private subnets (e.g., us-east-1b)
+  
+  PublicSubnetCidr:
+    Type: String
+    Description: CIDR block for the public subnet (e.g., 10.0.1.0/24)
+  
+  PrivateSubnet1Cidr:
+    Type: String
+    Description: CIDR block for the first private subnet (e.g., 10.0.2.0/24)
+  
+  PrivateSubnet2Cidr:
+    Type: String
+    Description: CIDR block for the second private subnet (e.g., 10.0.3.0/24)
+  
+  Environment:
+    Type: String
+    Description: Environment name (e.g., dev, staging, prod)
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+Resources:
+  # Public Subnet
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VpcId
+      AvailabilityZone: !Ref AvailabilityZone1
+      CidrBlock: !Ref PublicSubnetCidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${VpcName}-Public-Subnet'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Type
+          Value: Public
+  
+  # Private Subnet 1
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VpcId
+      AvailabilityZone: !Ref AvailabilityZone1
+      CidrBlock: !Ref PrivateSubnet1Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${VpcName}-Private-Subnet-1'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Type
+          Value: Private
+  
+  # Private Subnet 2
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VpcId
+      AvailabilityZone: !Ref AvailabilityZone2
+      CidrBlock: !Ref PrivateSubnet2Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${VpcName}-Private-Subnet-2'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Type
+          Value: Private
+
+Outputs:
+  PublicSubnetId:
+    Description: Public Subnet ID
+    Value: !Ref PublicSubnet
+    Export:
+      Name: !Sub '${AWS::StackName}-Public-Subnet-ID'
+  
+  PublicSubnetCidr:
+    Description: Public Subnet CIDR Block
+    Value: !Ref PublicSubnetCidr
+    Export:
+      Name: !Sub '${AWS::StackName}-Public-Subnet-CIDR'
+  
+  PrivateSubnet1Id:
+    Description: Private Subnet 1 ID
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub '${AWS::StackName}-Private-Subnet-1-ID'
+  
+  PrivateSubnet1Cidr:
+    Description: Private Subnet 1 CIDR Block
+    Value: !Ref PrivateSubnet1Cidr
+    Export:
+      Name: !Sub '${AWS::StackName}-Private-Subnet-1-CIDR'
+  
+  PrivateSubnet2Id:
+    Description: Private Subnet 2 ID
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub '${AWS::StackName}-Private-Subnet-2-ID'
+  
+  PrivateSubnet2Cidr:
+    Description: Private Subnet 2 CIDR Block
+    Value: !Ref PrivateSubnet2Cidr
+    Export:
+      Name: !Sub '${AWS::StackName}-Private-Subnet-2-CIDR'

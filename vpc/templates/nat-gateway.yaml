@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'NAT Gateway Module - Creates Elastic IP and NAT Gateway'
+
+Parameters:
+  VpcName:
+    Type: String
+    Description: Name tag for the VPC
+  
+  PublicSubnetId:
+    Type: String
+    Description: Public Subnet ID for NAT Gateway placement
+  
+  InternetGatewayAttachment:
+    Type: String
+    Description: Internet Gateway Attachment (dependency reference)
+  
+  Environment:
+    Type: String
+    Description: Environment name (e.g., dev, staging, prod)
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+Resources:
+  # Elastic IP for NAT Gateway
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${VpcName}-NAT-EIP'
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # NAT Gateway (placed in public subnet)
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    DependsOn: NatGatewayEIP
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId: !Ref PublicSubnetId
+      Tags:
+        - Key: Name
+          Value: !Sub '${VpcName}-NAT-Gateway'
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  NatGatewayId:
+    Description: NAT Gateway ID
+    Value: !Ref NatGateway
+    Export:
+      Name: !Sub '${AWS::StackName}-NAT-Gateway-ID'
+  
+  NatGatewayEIP:
+    Description: NAT Gateway Elastic IP Address
+    Value: !Ref NatGatewayEIP
+    Export:
+      Name: !Sub '${AWS::StackName}-NAT-EIP'
